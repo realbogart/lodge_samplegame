@@ -33,14 +33,14 @@ void room_place_wall(room_t room, int x, int y)
 {
 	tilemap_set_id_at(room->tiles_background, x, y, ROOM_TILE_FLOOR);
 	tilemap_set_id_at(room->tiles, x, y, ROOM_TILE_WALL);
-	tilemap_set_id_at(room->tiles_foreground, x, y - 1, ROOM_TILE_WALL_TOP);
+	tilemap_set_id_at(room->tiles_foreground, x, y + 1, ROOM_TILE_WALL_TOP);
 }
 
 void room_place_floor(room_t room, int x, int y)
 {
 	tilemap_set_id_at(room->tiles_background, x, y, -1);
 	tilemap_set_id_at(room->tiles, x, y, ROOM_TILE_FLOOR);
-	tilemap_set_id_at(room->tiles_foreground, x, y - 1, -1);
+	tilemap_set_id_at(room->tiles_foreground, x, y + 1, -1);
 }
 
 tilemap_t room_get_tiles_background(room_t room)

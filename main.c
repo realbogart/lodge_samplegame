@@ -20,8 +20,10 @@
 #include "atlas.h"
 #include "animatedsprites.h"
 #include "top-down/tiles.h"
-#include "tilemap.h"
 #include "lodge_window.h"
+
+#include "tilemap.h"
+#include "tilemap_render.h"
 #include "room.h"
 
 #define VIEW_WIDTH		320
@@ -85,20 +87,53 @@ void game_init_memory(struct shared_memory *shared_memory, int reload)
 	input_global = shared_memory->input;
 }
 
+int room_walkable_at(room_t room, vec2 position)
+{
+	return 1;
+	tilemap_t tilemap = room_get_tiles(game->testroom);
+
+	int world_width, world_height;
+	tilemap_get_dimensions(tilemap, &world_width, &world_height);
+
+	position[1] = world_height - position[1];
+
+	int grid_x = (int)floor(position[0] / 16.0f);
+	int grid_y = (int)floor(position[1] / 16.0f);
+
+	int id = tilemap_get_id_at(tilemap, grid_x, grid_y);
+
+	if (id == ROOM_TILE_WALL || id == -1)
+		return 0;
+
+	return 1;
+}
+
 void game_think(struct graphics *g, float dt)
 {
 	/* Move player */
-	if (key_down(LODGE_KEY_RIGHT))
-		game->player.sprite.position[0] += game->player.speed;
-	if (key_down(LODGE_KEY_LEFT))
-		game->player.sprite.position[0] -= game->player.speed;
-	if (key_down(LODGE_KEY_UP))
-		game->player.sprite.position[1] += game->player.speed;
-	if (key_down(LODGE_KEY_DOWN))
-		game->player.sprite.position[1] -= game->player.speed;
+	vec2 next_pos_x;
+	vec2 next_pos_y;
 
-	//float wtf_x = game->player.sprite.position[0];
-	//float wtf_y = game->player.sprite.position[1];
+	core_console_printf("%f : %f\n", game->player.sprite.position[0], game->player.sprite.position[1]);
+	set2f(next_pos_x, game->player.sprite.position[0], game->player.sprite.position[1]);
+
+	if (key_down(LODGE_KEY_RIGHT))
+		next_pos_x[0] += game->player.speed;
+	if (key_down(LODGE_KEY_LEFT))
+		next_pos_x[0] -= game->player.speed;
+
+	if (room_walkable_at(game->testroom, next_pos_x))
+		set2f(game->player.sprite.position, next_pos_x[0], next_pos_x[1]);
+
+	set2f(next_pos_y, game->player.sprite.position[0], game->player.sprite.position[1]);
+
+	if (key_down(LODGE_KEY_UP))
+		next_pos_y[1] += game->player.speed;
+	if (key_down(LODGE_KEY_DOWN))
+		next_pos_y[1] -= game->player.speed;
+
+	if (room_walkable_at(game->testroom, next_pos_y))
+		set2f(game->player.sprite.position, next_pos_y[0], next_pos_y[1]);
 
 	/* Move camera to player */
 	lerp2f(game->camera_pos, game->player.sprite.position, 0.01f*dt);
@@ -150,7 +185,7 @@ struct anim* get_tile_at_helper(tilemap_t tilemap, float x, float y, int tile_si
 	int world_width, world_height;
 	tilemap_get_dimensions(tilemap, &world_width, &world_height);
 
-	y = world_height - y;
+	//y = world_height - y;
 
 	int grid_x = (int)floor(x / (float)tile_size);
 	int grid_y = (int)floor(y / (float)tile_size);
@@ -209,8 +244,8 @@ void game_init()
 	/* Create animated sprite batcher. */
 	game->batcher = animatedsprites_create();
 
-	int room_width = 32;
-	int room_height = 32;
+	int room_width = 4;
+	int room_height = 4;
 
 	/* Setup map */
 	game->testroom = room_create(room_width, room_height);
@@ -218,7 +253,7 @@ void game_init()
 
 	/* Setup player */
 	game->player.anim_idle = pyxel_asset_get_anim(&assets->pyxels.textures, "player_idle");
-	set3f(game->player.sprite.position, -40.0f, -170.0f, 0.0f);
+	set3f(game->player.sprite.position, 0.0f, 0.0f, 0.0f);
 	set3f(game->camera_pos, game->player.sprite.position[0], game->player.sprite.position[1], game->player.sprite.position[3]);
 	set2f(game->player.sprite.scale, 1.0f, 1.0f);
 	game->player.speed = 0.8f;
