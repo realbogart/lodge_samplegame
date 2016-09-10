@@ -9,4 +9,4 @@ include(cmake_user.txt)
 include(${ENGINE_PATH}/CMakeLists.txt)
 
 # Build the engine.
-add_game_library(fridaynight main.c tilemap.c tilemap.h)
+add_game_library(fridaynight main.c tilemap.c tilemap.h room.c room.h)
