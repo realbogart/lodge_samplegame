@@ -1,6 +1,7 @@
 #include "tilemap_render.h"
 
 #include "animatedsprites.h"
+#include "atlas.h"
 
 struct tilemap_render
 {
@@ -39,7 +40,7 @@ tilemap_render_t tilemap_render_create(tilemap_t tilemap, get_anim_for_tile_t ge
 			struct anim* anim = tilemap_render->get_anim_fn(id);
 
 			animatedsprites_add(tilemap_render->animatedsprites, sprite);
-			animatedsprites_playanimation(tilemap_render->animatedsprites, anim);
+			animatedsprites_playanimation(sprite, anim);
 		}
 	}
 
@@ -55,7 +56,7 @@ void tilemap_render_destroy(tilemap_render_t tilemap)
 
 void tilemap_render_update(tilemap_render_t tilemap_render, struct atlas* atlas, float dt)
 {
-	animatedsprites_update(tilemap_render->tilemap, atlas, dt);
+	animatedsprites_update(tilemap_render->animatedsprites, atlas, dt);
 }
 
 void tilemap_render_render(tilemap_render_t tilemap_render, struct shader* s, struct graphics* g, GLuint tex, mat4 transform)

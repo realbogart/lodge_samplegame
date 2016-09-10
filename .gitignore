@@ -3,3 +3,4 @@ build/**/
 *.swp
 *.exe
 cmake_user.txt
+assets/Debug/*

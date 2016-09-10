@@ -60,9 +60,9 @@ struct game {
 
 	room_t					testroom;
 
-	struct tiles			tiles_background;
-	struct tiles			tiles;
-	struct tiles			tiles_foreground;
+	tilemap_render_t		tilemap_render_background;
+	tilemap_render_t		tilemap_render;
+	tilemap_render_t		tilemap_render_foreground;
 
 	struct tile_animations	tile_animations;
 
@@ -139,9 +139,11 @@ void game_think(struct graphics *g, float dt)
 	lerp2f(game->camera_pos, game->player.sprite.position, 0.01f*dt);
 
 	animatedsprites_update(game->batcher, &assets->pyxels.textures.atlas, dt);
-	tiles_think(&game->tiles_background, game->camera_pos, &assets->pyxels.textures.atlas, dt);
-	tiles_think(&game->tiles, game->camera_pos, &assets->pyxels.textures.atlas, dt);
-	tiles_think(&game->tiles_foreground, game->camera_pos, &assets->pyxels.textures.atlas, dt);
+
+	tilemap_render_update(game->tilemap_render_background, &assets->pyxels.textures.atlas, dt);
+	tilemap_render_update(game->tilemap_render, &assets->pyxels.textures.atlas, dt);
+	tilemap_render_update(game->tilemap_render_foreground, &assets->pyxels.textures.atlas, dt);
+
 	shader_uniforms_think(&assets->shaders.basic_shader, dt);
 }
 
@@ -159,12 +161,12 @@ void game_render(struct graphics *g, float dt)
 
 	identity(transform);
 
-	tiles_render(&game->tiles_background, &assets->shaders.basic_shader, g, assets->pyxels.textures.layers[0], transform);
-	tiles_render(&game->tiles, &assets->shaders.basic_shader, g, assets->pyxels.textures.layers[0], transform);
+	tilemap_render_render(game->tilemap_render_background, &assets->shaders.basic_shader, g, assets->pyxels.textures.layers[0], final);
+	tilemap_render_render(game->tilemap_render, &assets->shaders.basic_shader, g, assets->pyxels.textures.layers[0], final);
 
 	animatedsprites_render(game->batcher, &assets->shaders.basic_shader, g, assets->pyxels.textures.layers[0], final);
 
-	tiles_render(&game->tiles_foreground, &assets->shaders.basic_shader, g, assets->pyxels.textures.layers[0], transform);
+	tilemap_render_render(game->tilemap_render_foreground, &assets->shaders.basic_shader, g, assets->pyxels.textures.layers[0], final);
 }
 
 void game_mousebutton_callback(lodge_window_t window, int button, int action, int mods)
@@ -178,43 +180,6 @@ void game_mousebutton_callback(lodge_window_t window, int button, int action, in
 void game_console_init(struct console *c, struct env *env)
 {
 	/* env_bind_1f(c, "print_fps", &(game->print_fps)); */
-}
-
-struct anim* get_tile_at_helper(tilemap_t tilemap, float x, float y, int tile_size, int grid_x_max, int grid_y_max)
-{
-	int world_width, world_height;
-	tilemap_get_dimensions(tilemap, &world_width, &world_height);
-
-	//y = world_height - y;
-
-	int grid_x = (int)floor(x / (float)tile_size);
-	int grid_y = (int)floor(y / (float)tile_size);
-
-	int id = tilemap_get_id_at(tilemap, grid_x, grid_y);
-
-	if (id == ROOM_TILE_WALL)
-		return game->tile_animations.wall;
-	else if (id == ROOM_TILE_WALL_TOP)
-		return game->tile_animations.wall_top;
-	else if (id == ROOM_TILE_FLOOR)
-		return game->tile_animations.ground;
-	else
-		return 0;
-}
-
-struct anim* get_base_tile_at(float x, float y, int tile_size, int grid_x_max, int grid_y_max)
-{
-	return get_tile_at_helper(room_get_tiles_background(game->testroom), x, y, tile_size, grid_x_max, grid_y_max);
-}
-
-struct anim* get_tile_at(float x, float y, int tile_size, int grid_x_max, int grid_y_max)
-{
-	return get_tile_at_helper(room_get_tiles(game->testroom), x, y, tile_size, grid_x_max, grid_y_max);
-}
-
-struct anim* get_foreground_tile_at(float x, float y, int tile_size, int grid_x_max, int grid_y_max)
-{
-	return get_tile_at_helper(room_get_tiles_foreground(game->testroom), x, y, tile_size, grid_x_max, grid_y_max);
 }
 
 void testroom_init()
@@ -239,13 +204,25 @@ void testroom_init()
 	}
 }
 
+struct anim* get_tile_anim(int id)
+{
+	if (id == ROOM_TILE_WALL)
+		return game->tile_animations.wall;
+	else if (id == ROOM_TILE_WALL_TOP)
+		return game->tile_animations.wall_top;
+	else if (id == ROOM_TILE_FLOOR)
+		return game->tile_animations.ground;
+	else
+		return 0;
+}
+
 void game_init()
 {
 	/* Create animated sprite batcher. */
 	game->batcher = animatedsprites_create();
 
-	int room_width = 4;
-	int room_height = 4;
+	int room_width = 32;
+	int room_height = 32;
 
 	/* Setup map */
 	game->testroom = room_create(room_width, room_height);
@@ -258,14 +235,14 @@ void game_init()
 	set2f(game->player.sprite.scale, 1.0f, 1.0f);
 	game->player.speed = 0.8f;
 
-	/* Create tile animations */
-	tiles_init(&game->tiles_background, &get_base_tile_at, 16, VIEW_WIDTH, VIEW_HEIGHT, 256, 256);
-	tiles_init(&game->tiles, &get_tile_at, 16, VIEW_WIDTH, VIEW_HEIGHT, 256, 256);
-	tiles_init(&game->tiles_foreground, &get_foreground_tile_at, 16, VIEW_WIDTH, VIEW_HEIGHT, 256, 256);
-
+	/* Create tile renderers */
 	game->tile_animations.ground = pyxel_asset_get_anim(&assets->pyxels.textures, "ground");
 	game->tile_animations.wall = pyxel_asset_get_anim(&assets->pyxels.textures, "wall");
 	game->tile_animations.wall_top = pyxel_asset_get_anim(&assets->pyxels.textures, "wall_top");
+
+	game->tilemap_render_background = tilemap_render_create(room_get_tiles_background(game->testroom), &get_tile_anim, 16.0f);
+	game->tilemap_render = tilemap_render_create(room_get_tiles(game->testroom), &get_tile_anim, 16.0f);
+	game->tilemap_render_foreground = tilemap_render_create(room_get_tiles_foreground(game->testroom), &get_tile_anim, 16.0f);
 
 	animatedsprites_playanimation(&game->player.sprite, game->player.anim_idle);
 	animatedsprites_add(game->batcher, &game->player.sprite);
