@@ -135,18 +135,18 @@ void game_think(struct graphics *g, float dt)
 
 	// X check
 	if (room_walkable_at(game->testroom, next_pos[0] + 4.0f, game->player.sprite.position[1] - 4.0f) &&
-		room_walkable_at(game->testroom, next_pos[0] - 4.0f, game->player.sprite.position[1] - 4.0f) &&
+		room_walkable_at(game->testroom, next_pos[0] - 5.0f, game->player.sprite.position[1] - 4.0f) &&
 		room_walkable_at(game->testroom, next_pos[0] + 4.0f, game->player.sprite.position[1] - 8.0f) &&
-		room_walkable_at(game->testroom, next_pos[0] - 4.0f, game->player.sprite.position[1] - 8.0f))
+		room_walkable_at(game->testroom, next_pos[0] - 5.0f, game->player.sprite.position[1] - 8.0f))
 	{
 		set2f(game->player.sprite.position, next_pos[0], game->player.sprite.position[1]);
 	}
 
 	// Y check
 	if (room_walkable_at(game->testroom, game->player.sprite.position[0] + 4.0f, next_pos[1] - 4.0f) &&
-		room_walkable_at(game->testroom, game->player.sprite.position[0] - 4.0f, next_pos[1] - 4.0f) &&
+		room_walkable_at(game->testroom, game->player.sprite.position[0] - 5.0f, next_pos[1] - 4.0f) &&
 		room_walkable_at(game->testroom, game->player.sprite.position[0] + 4.0f, next_pos[1] - 8.0f) &&
-		room_walkable_at(game->testroom, game->player.sprite.position[0] - 4.0f, next_pos[1] - 8.0f))
+		room_walkable_at(game->testroom, game->player.sprite.position[0] - 5.0f, next_pos[1] - 8.0f))
 	{
 		set2f(game->player.sprite.position, game->player.sprite.position[0], next_pos[1]);
 	}
