@@ -34,7 +34,7 @@ tilemap_render_t tilemap_render_create(tilemap_t tilemap, get_anim_for_tile_t ge
 			struct sprite* sprite = &tilemap_render->sprites[map_width*y + x];
 
 			set3f(sprite->position, x * tile_size, -y * tile_size, 0.0f);
-			set2f(sprite->scale, 1.0f, 1.0f);
+			set2f(sprite->scale, 1.001f, 1.001f);
 
 			int id = tilemap_get_id_at(tilemap_render->tilemap, x, y);
 			struct anim* anim = tilemap_render->get_anim_fn(id);
