@@ -111,19 +111,26 @@ void game_think(struct graphics *g, float dt)
 {
 	/* Move player */
 	vec2 next_pos;
+	vec2 dir;
+
+	set2f(dir, 0.0f, 0.0f);
 
 	core_console_printf("%f : %f\n", game->player.sprite.position[0], game->player.sprite.position[1]);
 
 	set2f(next_pos, game->player.sprite.position[0], game->player.sprite.position[1]);
 
 	if (key_down(LODGE_KEY_RIGHT))
-		next_pos[0] += game->player.speed;
+		dir[0] = 1.0f;
 	if (key_down(LODGE_KEY_LEFT))
-		next_pos[0] -= game->player.speed;
+		dir[0] = -1.0f;
 	if (key_down(LODGE_KEY_UP))
-		next_pos[1] += game->player.speed;
+		dir[1] = 1.0f;
 	if (key_down(LODGE_KEY_DOWN))
-		next_pos[1] -= game->player.speed;
+		dir[1] = -1.0f;
+
+	norm2f(dir);
+	mult2f(dir, game->player.speed, game->player.speed);
+	add2f(next_pos, xy_of(dir));
 
 	// X check
 	if (room_walkable_at(game->testroom, next_pos[0] + 4.0f, game->player.sprite.position[1] - 4.0f) &&
