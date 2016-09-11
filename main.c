@@ -49,9 +49,9 @@ struct player
 
 struct tile_animations
 {
-	struct anim* ground;
-	struct anim* wall;
-	struct anim* wall_top;
+	struct anim* ground[16];
+	struct anim* wall[16];
+	struct anim* wall_top[16];
 };
 
 struct game {
@@ -86,26 +86,6 @@ void game_init_memory(struct shared_memory *shared_memory, int reload)
 	assets = shared_memory->assets;
 	vfs_global = shared_memory->vfs;
 	input_global = shared_memory->input;
-}
-
-int room_walkable_at(room_t room, float x, float y)
-{
-	tilemap_t tilemap = room_get_tiles(game->testroom);
-
-	int world_width, world_height;
-	tilemap_get_dimensions(tilemap, &world_width, &world_height);
-
-	float inv_y = world_height - y;
-
-	int grid_x = (int)floor((x + 8.0f) / 16.0f);
-	int grid_y = (int)floor((inv_y - 24.0f) / 16.0f);
-
-	int id = tilemap_get_id_at(tilemap, grid_x, grid_y);
-
-	if (id == ROOM_TILE_WALL || id == -1)
-		return 0;
-
-	return 1;
 }
 
 void game_think(struct graphics *g, float dt)
@@ -184,7 +164,7 @@ void game_render(struct graphics *g, float dt)
 
 	tilemap_render_render(game->tilemap_render_background, &assets->shaders.basic_shader, g, assets->pyxels.textures.layers[0], final);
 	tilemap_render_render(game->tilemap_render, &assets->shaders.basic_shader, g, assets->pyxels.textures.layers[0], final);
-
+	
 	animatedsprites_render(game->batcher, &assets->shaders.basic_shader, g, assets->pyxels.textures.layers[0], final);
 
 	tilemap_render_render(game->tilemap_render_foreground, &assets->shaders.basic_shader, g, assets->pyxels.textures.layers[0], final);
@@ -207,8 +187,9 @@ void testroom_init()
 {
 	int width, height;
 
+	room_place_wall(game->testroom, 5, 5);
 	room_get_dimensions(game->testroom, &width, &height);
-
+	
 	for (int y = 0; y >= 0 && y < height; y++)
 	{
 		for (int x = 0; x >= 0 && x < width; x++)
@@ -227,12 +208,15 @@ void testroom_init()
 
 struct anim* get_tile_anim(int id)
 {
-	if (id == ROOM_TILE_WALL)
-		return game->tile_animations.wall;
-	else if (id == ROOM_TILE_WALL_TOP)
-		return game->tile_animations.wall_top;
-	else if (id == ROOM_TILE_FLOOR)
-		return game->tile_animations.ground;
+	int type = id & ROOM_TILE_TYPEMASK;
+	int variation = id >> TILE_TYPE_SHIFT;
+
+	if (type == ROOM_TILE_WALL)
+		return game->tile_animations.wall[variation];
+	else if (type == ROOM_TILE_WALL_TOP)
+		return game->tile_animations.wall_top[variation];
+	else if (type == ROOM_TILE_FLOOR)
+		return game->tile_animations.ground[variation];
 	else
 		return 0;
 }
@@ -256,11 +240,27 @@ void game_init()
 	set2f(game->player.sprite.scale, 1.0f, 1.0f);
 	game->player.speed = 0.8f;
 
-	/* Create tile renderers */
-	game->tile_animations.ground = pyxel_asset_get_anim(&assets->pyxels.textures, "ground");
-	game->tile_animations.wall = pyxel_asset_get_anim(&assets->pyxels.textures, "wall");
-	game->tile_animations.wall_top = pyxel_asset_get_anim(&assets->pyxels.textures, "wall_top");
+	/* Load tile variations*/
+	const char* tile_name[] = {"ground", "wall", "wall_top"};
+	struct anim** tile_variation[] = { game->tile_animations.ground, game->tile_animations.wall, game->tile_animations.wall_top };
 
+	char buffer[256];
+
+	for (int i = 0, i_size = sizeof(tile_name)/sizeof(tile_name[0]); i < i_size; i++)
+	{
+		struct anim* base = pyxel_asset_get_anim(&assets->pyxels.textures, tile_name[i]);
+
+		for (int j = 0; j < 16; j++)
+		{
+			sprintf(buffer, "%s_%d", tile_name[i], j);
+			tile_variation[i][j] = pyxel_asset_get_anim(&assets->pyxels.textures, buffer);
+
+			if (tile_variation[i][j] == 0)
+				tile_variation[i][j] = base;
+		}
+	}
+
+	/* Create tile renderers */
 	game->tilemap_render_background = tilemap_render_create(room_get_tiles_background(game->testroom), &get_tile_anim, 16.0f);
 	game->tilemap_render = tilemap_render_create(room_get_tiles(game->testroom), &get_tile_anim, 16.0f);
 	game->tilemap_render_foreground = tilemap_render_create(room_get_tiles_foreground(game->testroom), &get_tile_anim, 16.0f);
