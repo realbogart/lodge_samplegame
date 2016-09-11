@@ -67,6 +67,7 @@ struct game {
 	struct tile_animations	tile_animations;
 
 	vec2					camera_pos;
+	float					camera_zoom;
 } *game = NULL;
 
 struct lodge_settings* game_get_settings()
@@ -168,10 +169,15 @@ void game_render(struct graphics *g, float dt)
 
 	mat4 transform;
 	mat4 offset;
+	mat4 scale_m;
+
 	mat4 final;
 
 	set2f(offset, 0.0f, 0.0f);
-	translate(offset, -game->camera_pos[0] + VIEW_WIDTH / 2, -game->camera_pos[1] + VIEW_HEIGHT / 2, 0.0f);
+	translate(offset, -game->camera_pos[0] + (VIEW_WIDTH / 2) / game->camera_zoom, -game->camera_pos[1] + (VIEW_HEIGHT / 2) / game->camera_zoom, 0.0f);
+	scale(scale_m, game->camera_zoom, game->camera_zoom, 1.0f);
+	mult(offset, scale_m, offset);
+
 	transpose(final, offset);
 
 	identity(transform);
@@ -264,6 +270,7 @@ void game_init()
 
 	/* Set camera position */
 	set2f(game->camera_pos, 0.0f, 0.0f);
+	game->camera_zoom = 1.0f;
 }
 
 void game_key_callback(lodge_window_t window, int key, int scancode, int action, int mods)
