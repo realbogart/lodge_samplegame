@@ -57,6 +57,7 @@ struct game_textures
 	GLint diffuse;
 	GLint normal;
 	GLint depth;
+	GLint palette;
 };
 
 struct game {
@@ -191,8 +192,11 @@ void game_render(struct graphics *g, float dt)
 	glBindTexture(GL_TEXTURE_2D, game->textures.depth);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, game->textures.palette);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	tilemap_render_render(game->tilemap_render_background, &assets->shaders.tilemap_shader);
 	tilemap_render_render(game->tilemap_render, &assets->shaders.tilemap_shader);
@@ -279,6 +283,7 @@ void game_init()
 	shader_constant_uniform1i(&assets->shaders.tilemap_shader, "diffuse", 0);
 	shader_constant_uniform1i(&assets->shaders.tilemap_shader, "normal", 1);
 	shader_constant_uniform1i(&assets->shaders.tilemap_shader, "depth", 2);
+	shader_constant_uniform1i(&assets->shaders.tilemap_shader, "palette", 3);
 	shader_uniform3f(&assets->shaders.tilemap_shader, "lightpos", &game->player.sprite.position);
 	shader_uniform_matrix4f(&assets->shaders.tilemap_shader, "projection", &core_global->graphics.projection);
 
@@ -306,6 +311,7 @@ void game_init()
 	game->textures.diffuse = assets->pyxels.textures.layers[2];
 	game->textures.normal = assets->pyxels.textures.layers[1];
 	game->textures.depth = assets->pyxels.textures.layers[0];
+	game->textures.palette = assets->textures.palette;
 
 	game->tilemap_render_background = tilemap_render_create(room_get_tiles_background(game->testroom), &get_tile_anim, 16.0f);
 	game->tilemap_render = tilemap_render_create(room_get_tiles(game->testroom), &get_tile_anim, 16.0f);
