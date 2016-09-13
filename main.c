@@ -22,7 +22,7 @@
 
 #include "tilemap.h"
 #include "tilemap_render.h"
-#include "room.h"
+#include "level.h"
 
 #define VIEW_WIDTH		320
 #define VIEW_HEIGHT		180
@@ -64,7 +64,7 @@ struct game {
 	struct animatedsprites*			batcher;
 	struct player					player;
 
-	room_t							testroom;
+	level_t							testroom;
 
 	struct game_textures			textures;
 
@@ -124,34 +124,34 @@ void game_think(struct graphics *g, float dt)
 	add2f(next_pos, xy_of(dir));
 
 	// X check
-	if (room_walkable_at(game->testroom, next_pos[0] + 4.0f, game->player.sprite.position[1] - 4.0f) &&
-		room_walkable_at(game->testroom, next_pos[0] - 5.0f, game->player.sprite.position[1] - 4.0f) &&
-		room_walkable_at(game->testroom, next_pos[0] + 4.0f, game->player.sprite.position[1] - 8.0f) &&
-		room_walkable_at(game->testroom, next_pos[0] - 5.0f, game->player.sprite.position[1] - 8.0f))
+	if (level_walkable_at(game->testroom, next_pos[0] + 4.0f, game->player.sprite.position[1] - 4.0f) &&
+		level_walkable_at(game->testroom, next_pos[0] - 5.0f, game->player.sprite.position[1] - 4.0f) &&
+		level_walkable_at(game->testroom, next_pos[0] + 4.0f, game->player.sprite.position[1] - 8.0f) &&
+		level_walkable_at(game->testroom, next_pos[0] - 5.0f, game->player.sprite.position[1] - 8.0f))
 	{
 		set2f(game->player.sprite.position, next_pos[0], game->player.sprite.position[1]);
 	}
 
 	// Y check
-	if (room_walkable_at(game->testroom, game->player.sprite.position[0] + 4.0f, next_pos[1] - 4.0f) &&
-		room_walkable_at(game->testroom, game->player.sprite.position[0] - 5.0f, next_pos[1] - 4.0f) &&
-		room_walkable_at(game->testroom, game->player.sprite.position[0] + 4.0f, next_pos[1] - 8.0f) &&
-		room_walkable_at(game->testroom, game->player.sprite.position[0] - 5.0f, next_pos[1] - 8.0f))
+	if (level_walkable_at(game->testroom, game->player.sprite.position[0] + 4.0f, next_pos[1] - 4.0f) &&
+		level_walkable_at(game->testroom, game->player.sprite.position[0] - 5.0f, next_pos[1] - 4.0f) &&
+		level_walkable_at(game->testroom, game->player.sprite.position[0] + 4.0f, next_pos[1] - 8.0f) &&
+		level_walkable_at(game->testroom, game->player.sprite.position[0] - 5.0f, next_pos[1] - 8.0f))
 	{
 		set2f(game->player.sprite.position, game->player.sprite.position[0], next_pos[1]);
 	}
 
 	/* Move camera to player */
-	float room_width, room_height;
-	room_get_dimensions(game->testroom, &room_width, &room_height);
+	float level_width, level_height;
+	level_get_dimensions(game->testroom, &level_width, &level_height);
 
 	vec2 camera_target;
 	set2f(camera_target, xy_of(game->player.sprite.position));
 	
-	camera_target[0] = max(camera_target[0], (VIEW_WIDTH / 2) / game->camera_zoom) - ROOM_TILE_SIZE / 2.0f;
-	camera_target[0] = min(camera_target[0], room_width - (VIEW_WIDTH / 2) / game->camera_zoom - ROOM_TILE_SIZE / 2.0f);
-	camera_target[1] = min(camera_target[1], - (VIEW_HEIGHT / 2) / game->camera_zoom) + ROOM_TILE_SIZE / 2.0f;
-	camera_target[1] = max(camera_target[1], - room_height + (VIEW_HEIGHT / 2) / game->camera_zoom + ROOM_TILE_SIZE / 2.0f);
+	camera_target[0] = max(camera_target[0], (VIEW_WIDTH / 2) / game->camera_zoom) - LEVEL_TILE_SIZE / 2.0f;
+	camera_target[0] = min(camera_target[0], level_width - (VIEW_WIDTH / 2) / game->camera_zoom - LEVEL_TILE_SIZE / 2.0f);
+	camera_target[1] = min(camera_target[1], - (VIEW_HEIGHT / 2) / game->camera_zoom) + LEVEL_TILE_SIZE / 2.0f;
+	camera_target[1] = max(camera_target[1], - level_height + (VIEW_HEIGHT / 2) / game->camera_zoom + LEVEL_TILE_SIZE / 2.0f);
 	lerp2f(game->camera_pos, camera_target, 0.01f*dt);
 
 	animatedsprites_update(game->batcher, &assets->pyxels.textures.atlas, dt);
@@ -228,39 +228,39 @@ void game_console_init(struct console *c, struct env *env)
 	/* env_bind_1f(c, "print_fps", &(game->print_fps)); */
 }
 
-void spawn_box(room_t room, int box_width, int box_height, int x, int y)
+void spawn_box(level_t level, int box_width, int box_height, int x, int y)
 {
 	for (int sy = y; sy < y + box_height; sy++)
 	{
 		for (int sx = x; sx < x + box_width; sx++)
 		{
-			room_place_wall(game->testroom, sx, sy);
+			level_place_wall(game->testroom, sx, sy);
 		}
 	}
 }
 
-void carve_box(room_t room, int box_width, int box_height, int x, int y)
+void carve_box(level_t level, int box_width, int box_height, int x, int y)
 {
 	for (int sy = y; sy < y + box_height; sy++)
 	{
 		for (int sx = x; sx < x + box_width; sx++)
 		{
-			room_place_floor(game->testroom, sx, sy);
+			level_place_floor(game->testroom, sx, sy);
 		}
 	}
 }
 
-void spawn_room(room_t room, int width, int height, int x, int y)
+void spawn_room(level_t level, int width, int height, int x, int y)
 {
 	spawn_box(game->testroom, width, height, x, y);
 	carve_box(game->testroom, width-2, height-2, x+1, y+1);
 }
 
-void testroom_init()
+void testlevel_init()
 {
 	int width, height;
 
-	room_get_tile_dimensions(game->testroom, &width, &height);
+	level_get_tile_dimensions(game->testroom, &width, &height);
 
 	spawn_box(game->testroom, width, height, 0, 0);
 	spawn_room(game->testroom, 8, 8, 0, 0);
@@ -272,11 +272,11 @@ void testroom_init()
 	//	{
 	//		if (rand() % 8 == 0)
 	//		{
-	//			room_place_wall(game->testroom, x, y);
+	//			level_place_wall(game->testroom, x, y);
 	//		}
 	//		else
 	//		{
-	//			room_place_floor(game->testroom, x, y);
+	//			level_place_floor(game->testroom, x, y);
 	//		}
 	//	}
 	//}
@@ -284,14 +284,14 @@ void testroom_init()
 
 struct anim* get_tile_anim(int id)
 {
-	int type = id & ROOM_TILE_TYPEMASK;
+	int type = id & LEVEL_TILE_TYPEMASK;
 	int variation = id >> TILE_TYPE_SHIFT;
 
-	if (type == ROOM_TILE_WALL)
+	if (type == LEVEL_TILE_WALL)
 		return game->tile_animations.wall[variation];
-	else if (type == ROOM_TILE_WALL_TOP)
+	else if (type == LEVEL_TILE_WALL_TOP)
 		return game->tile_animations.wall_top[variation];
-	else if (type == ROOM_TILE_FLOOR)
+	else if (type == LEVEL_TILE_FLOOR)
 		return game->tile_animations.ground[variation];
 	else
 		return 0;
@@ -303,19 +303,19 @@ void game_init()
 	/* Create animated sprite batcher. */
 	game->batcher = animatedsprites_create();
 
-	int room_width = 32;
-	int room_height = 32;
+	int level_width = 32;
+	int level_height = 32;
 
 	/* Setup map */
-	game->testroom = room_create(room_width, room_height);
-	testroom_init();
+	game->testroom = level_create(level_width, level_height);
+	testlevel_init();
 
 	/* Setup player */
 	game->player.anim_idle = pyxel_asset_get_anim(&assets->pyxels.textures, "player_idle");
 	set3f(game->player.sprite.position, 80.0f, -80.0f, 0.0f);
 	set3f(game->camera_pos, game->player.sprite.position[0], game->player.sprite.position[1], game->player.sprite.position[3]);
 	set2f(game->player.sprite.scale, 1.0f, 1.0f);
-	game->player.speed = 5.0f;
+	game->player.speed = 0.8f;
 
 	env_bind_3f(&core_global->env, "player_position", &game->player.sprite.position);
 	env_bind_1f(&core_global->env, "player_speed", &game->player.speed);
@@ -354,9 +354,9 @@ void game_init()
 	game->textures.depth = assets->pyxels.textures.layers[0];
 	game->textures.palette = assets->textures.palette;
 
-	game->tilemap_render_background = tilemap_render_create(room_get_tiles_background(game->testroom), &get_tile_anim, 16.0f);
-	game->tilemap_render = tilemap_render_create(room_get_tiles(game->testroom), &get_tile_anim, 16.0f);
-	game->tilemap_render_foreground = tilemap_render_create(room_get_tiles_foreground(game->testroom), &get_tile_anim, 16.0f);
+	game->tilemap_render_background = tilemap_render_create(level_get_tiles_background(game->testroom), &get_tile_anim, 16.0f);
+	game->tilemap_render = tilemap_render_create(level_get_tiles(game->testroom), &get_tile_anim, 16.0f);
+	game->tilemap_render_foreground = tilemap_render_create(level_get_tiles_foreground(game->testroom), &get_tile_anim, 16.0f);
 
 	animatedsprites_playanimation(&game->player.sprite, game->player.anim_idle);
 	animatedsprites_add(game->batcher, &game->player.sprite);
@@ -387,7 +387,7 @@ void game_assets_load()
 
 void game_assets_release()
 {
-	room_destroy(game->testroom);
+	level_destroy(game->testroom);
 
 	assets_release();
 }
