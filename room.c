@@ -119,6 +119,7 @@ void room_place_floor(room_t room, int x, int y)
 
 int room_walkable_at(room_t room, float x, float y)
 {
+	return 1;
 	tilemap_t tilemap = room_get_tiles(room);
 
 	int world_width, world_height;

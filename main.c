@@ -179,12 +179,20 @@ void game_render(struct graphics *g, float dt)
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, game->textures.diffuse);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, game->textures.normal);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, game->textures.depth);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	tilemap_render_render(game->tilemap_render_background, &assets->shaders.tilemap_shader);
 	tilemap_render_render(game->tilemap_render, &assets->shaders.tilemap_shader);
@@ -264,10 +272,14 @@ void game_init()
 	set2f(game->player.sprite.scale, 1.0f, 1.0f);
 	game->player.speed = 0.8f;
 
+	env_bind_3f(&core_global->env, "player_position", &game->player.sprite.position);
+	env_bind_1f(&core_global->env, "player_speed", &game->player.speed);
+
 	/* Setup shaders */
 	shader_constant_uniform1i(&assets->shaders.tilemap_shader, "diffuse", 0);
 	shader_constant_uniform1i(&assets->shaders.tilemap_shader, "normal", 1);
 	shader_constant_uniform1i(&assets->shaders.tilemap_shader, "depth", 2);
+	shader_uniform3f(&assets->shaders.tilemap_shader, "lightpos", &game->player.sprite.position);
 	shader_uniform_matrix4f(&assets->shaders.tilemap_shader, "projection", &core_global->graphics.projection);
 
 	/* Load tile variations*/
