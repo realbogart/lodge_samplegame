@@ -105,9 +105,7 @@ void room_place_wall(room_t room, int x, int y)
 {
 	tile_place(room->tiles_background, x, y, ROOM_TILE_FLOOR);
 	tile_place(room->tiles, x, y, ROOM_TILE_WALL);
-
-	//if (tile_get_type_at(room->tiles, x, y - 1) != ROOM_TILE_WALL)
-		tile_place(room->tiles_foreground, x, y - 1, ROOM_TILE_WALL_TOP);
+	tile_place(room->tiles_foreground, x, y - 1, ROOM_TILE_WALL_TOP);
 }
 
 void room_place_floor(room_t room, int x, int y)
@@ -155,8 +153,14 @@ tilemap_t room_get_tiles_foreground(room_t room)
 	return room->tiles_foreground;
 }
 
-void room_get_dimensions(room_t room, int* width, int* height)
+void room_get_tile_dimensions(room_t room, int* width, int* height)
 {
 	*width = room->width;
 	*height = room->height;
+}
+
+void room_get_dimensions(room_t room, float* width, float* height)
+{
+	*width = room->width * ROOM_TILE_SIZE;
+	*height = room->height * ROOM_TILE_SIZE;
 }

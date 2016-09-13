@@ -36,6 +36,7 @@ tilemap_t	room_get_tiles_background(room_t room);
 tilemap_t	room_get_tiles(room_t room);
 tilemap_t	room_get_tiles_foreground(room_t room);
 
-void		room_get_dimensions(room_t room, int* width, int* height);
+void		room_get_tile_dimensions(room_t room, int* width, int* height);
+void		room_get_dimensions(room_t room, float* width, float* height);
 
 #endif

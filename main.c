@@ -142,10 +142,17 @@ void game_think(struct graphics *g, float dt)
 	}
 
 	/* Move camera to player */
+	float room_width, room_height;
+	room_get_dimensions(game->testroom, &room_width, &room_height);
+
 	vec2 camera_target;
 	set2f(camera_target, xy_of(game->player.sprite.position));
 	
-	lerp2f(game->camera_pos, game->player.sprite.position, 0.01f*dt);
+	camera_target[0] = max(camera_target[0], (VIEW_WIDTH / 2) / game->camera_zoom) - ROOM_TILE_SIZE / 2.0f;
+	camera_target[0] = min(camera_target[0], room_width - (VIEW_WIDTH / 2) / game->camera_zoom - ROOM_TILE_SIZE / 2.0f);
+	camera_target[1] = min(camera_target[1], - (VIEW_HEIGHT / 2) / game->camera_zoom) + ROOM_TILE_SIZE / 2.0f;
+	camera_target[1] = max(camera_target[1], - room_height + (VIEW_HEIGHT / 2) / game->camera_zoom + ROOM_TILE_SIZE / 2.0f);
+	lerp2f(game->camera_pos, camera_target, 0.01f*dt);
 
 	animatedsprites_update(game->batcher, &assets->pyxels.textures.atlas, dt);
 
@@ -174,7 +181,6 @@ void game_render(struct graphics *g, float dt)
 	transpose(final, offset);
 
 	identity(transform);
-
 
 	glUseProgram(assets->shaders.tilemap_shader.program);
 
@@ -227,7 +233,7 @@ void testroom_init()
 	int width, height;
 
 	room_place_wall(game->testroom, 5, 5);
-	room_get_dimensions(game->testroom, &width, &height);
+	room_get_tile_dimensions(game->testroom, &width, &height);
 	
 	for (int y = 0; y >= 0 && y < height; y++)
 	{
