@@ -142,6 +142,9 @@ void game_think(struct graphics *g, float dt)
 	}
 
 	/* Move camera to player */
+	vec2 camera_target;
+	set2f(camera_target, xy_of(game->player.sprite.position));
+	
 	lerp2f(game->camera_pos, game->player.sprite.position, 0.01f*dt);
 
 	animatedsprites_update(game->batcher, &assets->pyxels.textures.atlas, dt);

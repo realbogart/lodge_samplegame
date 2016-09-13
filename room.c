@@ -124,10 +124,8 @@ int room_walkable_at(room_t room, float x, float y)
 	int world_width, world_height;
 	tilemap_get_dimensions(tilemap, &world_width, &world_height);
 
-	float inv_y = world_height - y;
-
-	int grid_x = (int)floor((x + 8.0f) / 16.0f);
-	int grid_y = (int)floor((inv_y - 24.0f) / 16.0f);
+	int grid_x = (int)floor((x + ROOM_TILE_SIZE/2.0f) / ROOM_TILE_SIZE);
+	int grid_y = (int)floor((-y + ROOM_TILE_SIZE/2.0f) / ROOM_TILE_SIZE);
 
 	int id = tilemap_get_id_at(tilemap, grid_x, grid_y);
 

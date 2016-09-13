@@ -22,6 +22,7 @@ enum room_tile_mask
 #define ROOM_TILE_FLOOR		0
 #define ROOM_TILE_WALL		1
 #define ROOM_TILE_WALL_TOP	2
+#define ROOM_TILE_SIZE		16.0f
 
 room_t		room_create(int width, int height);
 void		room_destroy(room_t room);
