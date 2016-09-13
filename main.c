@@ -228,27 +228,58 @@ void game_console_init(struct console *c, struct env *env)
 	/* env_bind_1f(c, "print_fps", &(game->print_fps)); */
 }
 
+void spawn_box(room_t room, int box_width, int box_height, int x, int y)
+{
+	for (int sy = y; sy < y + box_height; sy++)
+	{
+		for (int sx = x; sx < x + box_width; sx++)
+		{
+			room_place_wall(game->testroom, sx, sy);
+		}
+	}
+}
+
+void carve_box(room_t room, int box_width, int box_height, int x, int y)
+{
+	for (int sy = y; sy < y + box_height; sy++)
+	{
+		for (int sx = x; sx < x + box_width; sx++)
+		{
+			room_place_floor(game->testroom, sx, sy);
+		}
+	}
+}
+
+void spawn_room(room_t room, int width, int height, int x, int y)
+{
+	spawn_box(game->testroom, width, height, x, y);
+	carve_box(game->testroom, width-2, height-2, x+1, y+1);
+}
+
 void testroom_init()
 {
 	int width, height;
 
-	room_place_wall(game->testroom, 5, 5);
 	room_get_tile_dimensions(game->testroom, &width, &height);
-	
-	for (int y = 0; y >= 0 && y < height; y++)
-	{
-		for (int x = 0; x >= 0 && x < width; x++)
-		{
-			if (rand() % 8 == 0)
-			{
-				room_place_wall(game->testroom, x, y);
-			}
-			else
-			{
-				room_place_floor(game->testroom, x, y);
-			}
-		}
-	}
+
+	spawn_box(game->testroom, width, height, 0, 0);
+	spawn_room(game->testroom, 8, 8, 0, 0);
+	spawn_room(game->testroom, 8, 8, 8, 8);
+
+	//for (int y = 0; y >= 0 && y < height; y++)
+	//{
+	//	for (int x = 0; x >= 0 && x < width; x++)
+	//	{
+	//		if (rand() % 8 == 0)
+	//		{
+	//			room_place_wall(game->testroom, x, y);
+	//		}
+	//		else
+	//		{
+	//			room_place_floor(game->testroom, x, y);
+	//		}
+	//	}
+	//}
 }
 
 struct anim* get_tile_anim(int id)
@@ -268,6 +299,7 @@ struct anim* get_tile_anim(int id)
 
 void game_init()
 {
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	/* Create animated sprite batcher. */
 	game->batcher = animatedsprites_create();
 
@@ -283,7 +315,7 @@ void game_init()
 	set3f(game->player.sprite.position, 80.0f, -80.0f, 0.0f);
 	set3f(game->camera_pos, game->player.sprite.position[0], game->player.sprite.position[1], game->player.sprite.position[3]);
 	set2f(game->player.sprite.scale, 1.0f, 1.0f);
-	game->player.speed = 0.8f;
+	game->player.speed = 5.0f;
 
 	env_bind_3f(&core_global->env, "player_position", &game->player.sprite.position);
 	env_bind_1f(&core_global->env, "player_speed", &game->player.speed);
