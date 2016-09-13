@@ -59,7 +59,7 @@ void tilemap_render_update(tilemap_render_t tilemap_render, struct atlas* atlas,
 	animatedsprites_update(tilemap_render->animatedsprites, atlas, dt);
 }
 
-void tilemap_render_render(tilemap_render_t tilemap_render, struct shader* s, struct graphics* g, GLuint tex, mat4 transform)
+void tilemap_render_render(tilemap_render_t tilemap_render, struct shader* s)
 {
-	animatedsprites_render(tilemap_render->animatedsprites, s, g, tex, transform);
+	animatedsprites_render(tilemap_render->animatedsprites, s);
 }

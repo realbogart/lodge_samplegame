@@ -13,6 +13,6 @@ tilemap_render_t	tilemap_render_create(tilemap_t tilemap, get_anim_for_tile_t ge
 void				tilemap_render_destroy(tilemap_render_t tilemap_render);
 
 void				tilemap_render_update(tilemap_render_t tilemap_render, struct atlas* atlas, float dt);
-void				tilemap_render_render(tilemap_render_t tilemap_render, struct shader* s, struct graphics* g, GLuint tex, mat4 transform);
+void				tilemap_render_render(tilemap_render_t tilemap_render, struct shader* s);
 
 #endif

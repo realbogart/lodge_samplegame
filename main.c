@@ -1,7 +1,5 @@
 /**
- * TODO: Write header.
- *
- * Author: AUTHOR_NAME <AUTHOR_EMAIL>
+ * Author: Johan Yngman <johan.yngman@gmail.com>
  * Date: 2016
  */
 
@@ -32,8 +30,8 @@
 const struct lodge_settings settings = {
 	.view_width			= VIEW_WIDTH,
 	.view_height		= VIEW_HEIGHT,
-	.window_width		= VIEW_WIDTH,
-	.window_height		= VIEW_HEIGHT,
+	.window_width		= VIEW_WIDTH*4,
+	.window_height		= VIEW_HEIGHT*4,
 	.window_title		= "fridaynight",
 	.sound_listener		= { VIEW_WIDTH / 2.0f, VIEW_HEIGHT / 2.0f, 0.0f },
 	.sound_distance_max = 500.0f,
@@ -54,20 +52,29 @@ struct tile_animations
 	struct anim* wall_top[16];
 };
 
+struct game_textures
+{
+	GLint diffuse;
+	GLint normal;
+	GLint depth;
+};
+
 struct game {
-	struct animatedsprites*	batcher;
-	struct player			player;
+	struct animatedsprites*			batcher;
+	struct player					player;
 
-	room_t					testroom;
+	room_t							testroom;
 
-	tilemap_render_t		tilemap_render_background;
-	tilemap_render_t		tilemap_render;
-	tilemap_render_t		tilemap_render_foreground;
+	struct game_textures			textures;
 
-	struct tile_animations	tile_animations;
+	tilemap_render_t				tilemap_render_background;
+	tilemap_render_t				tilemap_render;
+	tilemap_render_t				tilemap_render_foreground;
 
-	vec2					camera_pos;
-	float					camera_zoom;
+	struct tile_animations			tile_animations;
+
+	vec2							camera_pos;
+	float							camera_zoom;
 } *game = NULL;
 
 struct lodge_settings* game_get_settings()
@@ -90,13 +97,15 @@ void game_init_memory(struct shared_memory *shared_memory, int reload)
 
 void game_think(struct graphics *g, float dt)
 {
+	shader_uniforms_think(&assets->shaders.tilemap_shader, dt);
+
 	/* Move player */
 	vec2 next_pos;
 	vec2 dir;
 
 	set2f(dir, 0.0f, 0.0f);
 
-	core_console_printf("%f : %f\n", game->player.sprite.position[0], game->player.sprite.position[1]);
+	//core_console_printf("%f : %f\n", game->player.sprite.position[0], game->player.sprite.position[1]);
 
 	set2f(next_pos, game->player.sprite.position[0], game->player.sprite.position[1]);
 
@@ -162,12 +171,27 @@ void game_render(struct graphics *g, float dt)
 
 	identity(transform);
 
-	tilemap_render_render(game->tilemap_render_background, &assets->shaders.basic_shader, g, assets->pyxels.textures.layers[0], final);
-	tilemap_render_render(game->tilemap_render, &assets->shaders.basic_shader, g, assets->pyxels.textures.layers[0], final);
-	
-	animatedsprites_render(game->batcher, &assets->shaders.basic_shader, g, assets->pyxels.textures.layers[0], final);
 
-	tilemap_render_render(game->tilemap_render_foreground, &assets->shaders.basic_shader, g, assets->pyxels.textures.layers[0], final);
+	glUseProgram(assets->shaders.tilemap_shader.program);
+
+	GLint uniform_transform = glGetUniformLocation(assets->shaders.tilemap_shader.program, "transform");
+	glUniformMatrix4fv(uniform_transform, 1, GL_FALSE, final);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, game->textures.diffuse);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, game->textures.normal);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, game->textures.depth);
+
+	tilemap_render_render(game->tilemap_render_background, &assets->shaders.tilemap_shader);
+	tilemap_render_render(game->tilemap_render, &assets->shaders.tilemap_shader);
+	
+	animatedsprites_render_simple(game->batcher, &assets->shaders.basic_shader, game->textures.diffuse, g->projection, final);
+	
+	tilemap_render_render(game->tilemap_render_foreground, &assets->shaders.tilemap_shader);
 }
 
 void game_mousebutton_callback(lodge_window_t window, int button, int action, int mods)
@@ -235,10 +259,16 @@ void game_init()
 
 	/* Setup player */
 	game->player.anim_idle = pyxel_asset_get_anim(&assets->pyxels.textures, "player_idle");
-	set3f(game->player.sprite.position, 40.0f, 0.0f, 0.0f);
+	set3f(game->player.sprite.position, 80.0f, -80.0f, 0.0f);
 	set3f(game->camera_pos, game->player.sprite.position[0], game->player.sprite.position[1], game->player.sprite.position[3]);
 	set2f(game->player.sprite.scale, 1.0f, 1.0f);
 	game->player.speed = 0.8f;
+
+	/* Setup shaders */
+	shader_constant_uniform1i(&assets->shaders.tilemap_shader, "diffuse", 0);
+	shader_constant_uniform1i(&assets->shaders.tilemap_shader, "normal", 1);
+	shader_constant_uniform1i(&assets->shaders.tilemap_shader, "depth", 2);
+	shader_uniform_matrix4f(&assets->shaders.tilemap_shader, "projection", &core_global->graphics.projection);
 
 	/* Load tile variations*/
 	const char* tile_name[] = {"ground", "wall", "wall_top"};
@@ -261,6 +291,10 @@ void game_init()
 	}
 
 	/* Create tile renderers */
+	game->textures.diffuse = assets->pyxels.textures.layers[2];
+	game->textures.normal = assets->pyxels.textures.layers[1];
+	game->textures.depth = assets->pyxels.textures.layers[0];
+
 	game->tilemap_render_background = tilemap_render_create(room_get_tiles_background(game->testroom), &get_tile_anim, 16.0f);
 	game->tilemap_render = tilemap_render_create(room_get_tiles(game->testroom), &get_tile_anim, 16.0f);
 	game->tilemap_render_foreground = tilemap_render_create(room_get_tiles_foreground(game->testroom), &get_tile_anim, 16.0f);

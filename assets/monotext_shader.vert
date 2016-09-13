@@ -1,8 +1,8 @@
 #version 400 core
 precision highp float;
 
-uniform mat4 transform;
 uniform mat4 projection;
+uniform mat4 transform;
 
 in vec3 vertex_in;
 in vec2 texcoord_in;
