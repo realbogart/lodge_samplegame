@@ -41,6 +41,8 @@ void tilemap_render_set(tilemap_render_t tilemap_render, tilemap_t tilemap)
 	int map_width, map_height;
 	tilemap_get_dimensions(tilemap, &map_width, &map_height);
 
+	animatedsprites_clear(tilemap_render->animatedsprites);
+
 	for (int y = 0; y < map_height; y++)
 	{
 		for (int x = 0; x < map_width; x++)
