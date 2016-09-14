@@ -300,15 +300,20 @@ struct anim* get_tile_anim(int id)
 void game_init()
 {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
 	/* Create animated sprite batcher. */
 	game->batcher = animatedsprites_create();
 
 	int level_width = 32;
 	int level_height = 32;
 
+	srand(time(0));
+
 	/* Setup map */
 	game->testroom = level_create(level_width, level_height);
-	testlevel_init();
+	level_generate(game->testroom, rand());
+
+	//testlevel_init();
 
 	/* Setup player */
 	game->player.anim_idle = pyxel_asset_get_anim(&assets->pyxels.textures, "player_idle");
