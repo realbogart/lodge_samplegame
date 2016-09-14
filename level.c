@@ -74,9 +74,9 @@ struct level
 
 void level_clean(level_t level)
 {
-	for (int y = 0; y >= 0 && y < level->height; y++)
+	for (int y = 0; y < level->height; y++)
 	{
-		for (int x = 0; x >= 0 && x < level->width; x++)
+		for (int x = 0; x < level->width; x++)
 		{
 			tilemap_set_id_at(level->tiles_background, x, y, LEVEL_TILE_NONE);
 			tilemap_set_id_at(level->tiles, x, y, LEVEL_TILE_NONE);
@@ -101,8 +101,6 @@ level_t level_create(int width, int height)
 	level->tiles_background = tilemap_create(width, height);
 	level->tiles = tilemap_create(width, height);
 	level->tiles_foreground = tilemap_create(width, height);
-
-	level_clean(level);
 
 	return level;
 }
@@ -159,7 +157,10 @@ void level_generate_path(level_t level)
 										    ROOM_OPENINGS_LEFT, ROOM_OPENINGS_BOTTOM, ROOM_OPENINGS_RIGHT, ROOM_OPENINGS_TOP };
 
 	int found_end = 0;
-	int room_steps = 8;
+	int room_steps = 7;
+
+	while (rand() % 2 == 0 && room_steps < 14)
+		room_steps++;
 
 	for (int i = 0; i < room_steps && !found_end; i++)
 	{
@@ -203,11 +204,46 @@ void level_generate_path(level_t level)
 	level->rooms[current_index].types |= ROOM_TYPES_ON_PATH;
 }
 
+void spawn_box(level_t level, int box_width, int box_height, int x, int y)
+{
+	for (int sy = y; sy < y + box_height; sy++)
+	{
+		for (int sx = x; sx < x + box_width; sx++)
+		{
+			level_place_wall(level, sx, sy);
+		}
+	}
+}
+
+void carve_box(level_t level, int box_width, int box_height, int x, int y)
+{
+	for (int sy = y; sy < y + box_height; sy++)
+	{
+		for (int sx = x; sx < x + box_width; sx++)
+		{
+			level_place_floor(level, sx, sy);
+		}
+	}
+}
+
 void level_generate(level_t level, int seed)
 {
 	srand(seed);
 
+	level_clean(level);
+	spawn_box(level, 32, 32, 0, 0);
 	level_generate_path(level);
+
+	for (int y = 0; y < 4; y++)
+	{
+		for (int x = 0; x < 4; x++)
+		{
+			if (level->rooms[4 * y + x].types & ROOM_TYPES_ON_PATH)
+			{
+				carve_box(level, 8, 8, x*8, y*8);
+			}
+		}
+	}
 }
 
 enum level_tile_mask tile_get_mask(tilemap_t tilemap, int x, int y, int type)
@@ -296,6 +332,7 @@ void level_place_floor(level_t level, int x, int y)
 
 int level_walkable_at(level_t level, float x, float y)
 {
+	return 1;
 	tilemap_t tilemap = level_get_tiles(level);
 
 	int world_width, world_height;

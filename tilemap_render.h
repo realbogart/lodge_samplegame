@@ -11,6 +11,7 @@ typedef struct anim* (*get_anim_for_tile_t)(int id);
 
 tilemap_render_t	tilemap_render_create(tilemap_t tilemap, get_anim_for_tile_t get_anim_fn, float tile_size);
 void				tilemap_render_destroy(tilemap_render_t tilemap_render);
+void				tilemap_render_set(tilemap_render_t tilemap_render, tilemap_t tilemap);
 
 void				tilemap_render_update(tilemap_render_t tilemap_render, struct atlas* atlas, float dt);
 void				tilemap_render_render(tilemap_render_t tilemap_render, struct shader* s);

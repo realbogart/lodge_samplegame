@@ -24,8 +24,22 @@ tilemap_render_t tilemap_render_create(tilemap_t tilemap, get_anim_for_tile_t ge
 
 	int map_width, map_height;
 	tilemap_get_dimensions(tilemap, &map_width, &map_height);
-
 	tilemap_render->sprites = (struct sprite *) calloc(map_width * map_height, sizeof(struct sprite));
+
+	tilemap_render_set(tilemap_render, tilemap);
+
+	return tilemap_render;
+}
+
+void tilemap_render_destroy(tilemap_render_t tilemap)
+{
+	free(tilemap);
+}
+
+void tilemap_render_set(tilemap_render_t tilemap_render, tilemap_t tilemap)
+{
+	int map_width, map_height;
+	tilemap_get_dimensions(tilemap, &map_width, &map_height);
 
 	for (int y = 0; y < map_height; y++)
 	{
@@ -33,7 +47,7 @@ tilemap_render_t tilemap_render_create(tilemap_t tilemap, get_anim_for_tile_t ge
 		{
 			struct sprite* sprite = &tilemap_render->sprites[map_width*y + x];
 
-			set3f(sprite->position, x * tile_size, -y * tile_size, 0.0f);
+			set3f(sprite->position, x * tilemap_render->tile_size, -y * tilemap_render->tile_size, 0.0f);
 			set2f(sprite->scale, 1.001f, 1.001f);
 
 			int id = tilemap_get_id_at(tilemap_render->tilemap, x, y);
@@ -43,13 +57,6 @@ tilemap_render_t tilemap_render_create(tilemap_t tilemap, get_anim_for_tile_t ge
 			animatedsprites_playanimation(sprite, anim);
 		}
 	}
-
-	return tilemap_render;
-}
-
-void tilemap_render_destroy(tilemap_render_t tilemap)
-{
-	free(tilemap);
 }
 
 /* TODO: Pass view to update/render to only update and render tiles on screen */

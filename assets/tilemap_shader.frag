@@ -90,7 +90,7 @@ void main()
 	float light_angle = max(0.0, dot(normal, light_dir));
 	
 	//float light_att = 50.0 / (1.0 + 0.1*light_dist + 0.05*light_dist*light_dist);
-	float light_radius = 100.0;
+	float light_radius = 1000.0;
 	float light_att = clamp(1.0 - (light_dist*light_dist)/(light_radius*light_radius), 0.0, 1.0);
 	light_att *= light_att;
 	

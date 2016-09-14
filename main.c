@@ -228,28 +228,6 @@ void game_console_init(struct console *c, struct env *env)
 	/* env_bind_1f(c, "print_fps", &(game->print_fps)); */
 }
 
-void spawn_box(level_t level, int box_width, int box_height, int x, int y)
-{
-	for (int sy = y; sy < y + box_height; sy++)
-	{
-		for (int sx = x; sx < x + box_width; sx++)
-		{
-			level_place_wall(game->testroom, sx, sy);
-		}
-	}
-}
-
-void carve_box(level_t level, int box_width, int box_height, int x, int y)
-{
-	for (int sy = y; sy < y + box_height; sy++)
-	{
-		for (int sx = x; sx < x + box_width; sx++)
-		{
-			level_place_floor(game->testroom, sx, sy);
-		}
-	}
-}
-
 void spawn_room(level_t level, int width, int height, int x, int y)
 {
 	spawn_box(game->testroom, width, height, x, y);
@@ -263,8 +241,8 @@ void testlevel_init()
 	level_get_tile_dimensions(game->testroom, &width, &height);
 
 	spawn_box(game->testroom, width, height, 0, 0);
-	spawn_room(game->testroom, 8, 8, 0, 0);
-	spawn_room(game->testroom, 8, 8, 8, 8);
+	//spawn_room(game->testroom, 8, 8, 0, 0);
+	//spawn_room(game->testroom, 8, 8, 8, 8);
 
 	//for (int y = 0; y >= 0 && y < height; y++)
 	//{
@@ -320,7 +298,7 @@ void game_init()
 	set3f(game->player.sprite.position, 80.0f, -80.0f, 0.0f);
 	set3f(game->camera_pos, game->player.sprite.position[0], game->player.sprite.position[1], game->player.sprite.position[3]);
 	set2f(game->player.sprite.scale, 1.0f, 1.0f);
-	game->player.speed = 0.8f;
+	game->player.speed = 5.8f;
 
 	env_bind_3f(&core_global->env, "player_position", &game->player.sprite.position);
 	env_bind_1f(&core_global->env, "player_speed", &game->player.speed);
@@ -368,7 +346,7 @@ void game_init()
 
 	/* Set camera position */
 	set2f(game->camera_pos, 0.0f, 0.0f);
-	game->camera_zoom = 1.0f;
+	game->camera_zoom = 0.25f;
 }
 
 void game_key_callback(lodge_window_t window, int key, int scancode, int action, int mods)
@@ -380,6 +358,12 @@ void game_key_callback(lodge_window_t window, int key, int scancode, int action,
 				break;
 			case LODGE_KEY_ENTER:
 				lodge_window_toggle_fullscreen(window);
+				break;
+			case LODGE_KEY_X:
+				level_generate(game->testroom, rand());
+				tilemap_render_set(game->tilemap_render_background, level_get_tiles_background(game->testroom));
+				tilemap_render_set(game->tilemap_render, level_get_tiles(game->testroom));
+				tilemap_render_set(game->tilemap_render_foreground, level_get_tiles_foreground(game->testroom));
 				break;
 		}
 	}
