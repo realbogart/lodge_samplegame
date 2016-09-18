@@ -267,11 +267,11 @@ struct anim* get_tile_anim(int id)
 	int type = id & LEVEL_TILE_TYPEMASK;
 	int variation = id >> TILE_TYPE_SHIFT;
 
-	if (type == LEVEL_TILE_WALL)
+	if (type == ROOM_TILE_WALL)
 		return game->tile_animations.wall[variation];
-	else if (type == LEVEL_TILE_WALL_TOP)
+	else if (type == ROOM_TILE_WALL_TOP)
 		return game->tile_animations.wall_top[variation];
-	else if (type == LEVEL_TILE_FLOOR)
+	else if (type == ROOM_TILE_FLOOR)
 		return game->tile_animations.ground[variation];
 	else
 		return 0;

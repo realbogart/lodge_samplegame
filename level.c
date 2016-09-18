@@ -3,21 +3,6 @@
 
 #include <math.h>
 
-enum room_properties
-{
-	ROOM_TYPES_ON_PATH = 1,
-	ROOM_TYPES_START = 2,
-	ROOM_TYPES_END = 4
-};
-
-struct room
-{
-	tilemap_t tiles;
-
-	enum room_openings openings;
-	enum room_properties properties;
-};
-
 struct level
 {
 	tilemap_t tiles_background;
@@ -36,9 +21,9 @@ void level_clean(level_t level)
 	{
 		for (int x = 0; x < level->width; x++)
 		{
-			tilemap_set_id_at(level->tiles_background, x, y, LEVEL_TILE_NONE);
-			tilemap_set_id_at(level->tiles, x, y, LEVEL_TILE_NONE);
-			tilemap_set_id_at(level->tiles_foreground, x, y, LEVEL_TILE_NONE);
+			tilemap_set_id_at(level->tiles_background, x, y, ROOM_TILE_NONE);
+			tilemap_set_id_at(level->tiles, x, y, ROOM_TILE_NONE);
+			tilemap_set_id_at(level->tiles_foreground, x, y, ROOM_TILE_NONE);
 		}
 	}
 
@@ -91,7 +76,7 @@ void level_destroy(level_t room)
 void level_generate_path(level_t level)
 {
 	int current_index = rand() % 16;
-	level->rooms[current_index].properties = ROOM_TYPES_START;
+	level->rooms[current_index].properties = ROOM_PROPERTY_START;
 
 	int step_table[] = { 1, -1, 4, -4,
 						 1, -1, -4, 4,
@@ -122,7 +107,7 @@ void level_generate_path(level_t level)
 
 	for (int i = 0; i < room_steps && !found_end; i++)
 	{
-		level->rooms[current_index].properties |= ROOM_TYPES_ON_PATH;
+		level->rooms[current_index].properties |= ROOM_PROPERTY_ON_PATH;
 
 		int step = rand() % 24;
 		int tries = 0;
@@ -138,7 +123,7 @@ void level_generate_path(level_t level)
 			int next_y = try_room / 4;
 
 			if (try_room >= 0 && try_room < 16 && 
-				!(level->rooms[try_room].properties & ROOM_TYPES_ON_PATH) &&
+				!(level->rooms[try_room].properties & ROOM_PROPERTY_ON_PATH) &&
 				!(step_dir == -1 && current_y != next_y) &&
 				!(step_dir == 1 && current_y != next_y))
 			{
@@ -158,8 +143,8 @@ void level_generate_path(level_t level)
 			found_end = 1;
 	}
 
-	level->rooms[current_index].properties |= ROOM_TYPES_END;
-	level->rooms[current_index].properties |= ROOM_TYPES_ON_PATH;
+	level->rooms[current_index].properties |= ROOM_PROPERTY_END;
+	level->rooms[current_index].properties |= ROOM_PROPERTY_ON_PATH;
 }
 
 void spawn_box(level_t level, int box_width, int box_height, int x, int y)
@@ -188,7 +173,6 @@ void level_generate_rooms(level_t level)
 {
 	for (int i = 0; i < 16; i++)
 	{
-		struct room* room = &level->rooms[i];
 	}
 }
 
@@ -205,7 +189,7 @@ void level_generate(level_t level, int seed)
 	{
 		for (int x = 0; x < 4; x++)
 		{
-			if (level->rooms[4 * y + x].properties & ROOM_TYPES_ON_PATH)
+			if (level->rooms[4 * y + x].properties & ROOM_PROPERTY_ON_PATH)
 			{
 				carve_box(level, 7, 7, x*8 + 1, y*8 + 1);
 			}
@@ -219,7 +203,7 @@ void level_generate(level_t level, int seed)
 
 enum level_tile_mask tile_get_mask(tilemap_t tilemap, int x, int y, int type)
 {
-	if (type == LEVEL_TILE_NONE)
+	if (type == ROOM_TILE_NONE)
 		return 0;
 
 	enum level_tile_mask mask = 0;
@@ -245,7 +229,7 @@ void tile_update(tilemap_t tilemap, int x, int y)
 {
 	int id = tilemap_get_id_at(tilemap, x, y);
 
-	if (id != LEVEL_TILE_NONE)
+	if (id != ROOM_TILE_NONE)
 	{
 		int type = id & LEVEL_TILE_TYPEMASK;
 		enum level_tile_mask mask = tile_get_mask(tilemap, x, y, type);
@@ -260,7 +244,7 @@ void tile_update(tilemap_t tilemap, int x, int y)
 
 void tile_place(tilemap_t tilemap, int x, int y, int type)
 {
-	if (type != LEVEL_TILE_NONE)
+	if (type != ROOM_TILE_NONE)
 	{
 		enum level_tile_mask mask = tile_get_mask(tilemap, x, y, type);
 
@@ -272,7 +256,7 @@ void tile_place(tilemap_t tilemap, int x, int y, int type)
 	}
 	else
 	{
-		tilemap_set_id_at(tilemap, x, y, LEVEL_TILE_NONE);
+		tilemap_set_id_at(tilemap, x, y, ROOM_TILE_NONE);
 	}
 
 	// Update neighbours
@@ -289,16 +273,16 @@ int tile_get_type_at(tilemap_t tilemap, int x, int y)
 
 void level_place_wall(level_t level, int x, int y)
 {
-	tile_place(level->tiles_background, x, y, LEVEL_TILE_FLOOR);
-	tile_place(level->tiles, x, y, LEVEL_TILE_WALL);
-	tile_place(level->tiles_foreground, x, y - 1, LEVEL_TILE_WALL_TOP);
+	tile_place(level->tiles_background, x, y, ROOM_TILE_FLOOR);
+	tile_place(level->tiles, x, y, ROOM_TILE_WALL);
+	tile_place(level->tiles_foreground, x, y - 1, ROOM_TILE_WALL_TOP);
 }
 
 void level_place_floor(level_t level, int x, int y)
 {
-	tile_place(level->tiles_background, x, y, LEVEL_TILE_FLOOR);
-	tile_place(level->tiles, x, y, LEVEL_TILE_FLOOR);
-	tile_place(level->tiles_foreground, x, y - 1, LEVEL_TILE_NONE);
+	tile_place(level->tiles_background, x, y, ROOM_TILE_FLOOR);
+	tile_place(level->tiles, x, y, ROOM_TILE_FLOOR);
+	tile_place(level->tiles_foreground, x, y - 1, ROOM_TILE_NONE);
 }
 
 int level_walkable_at(level_t level, float x, float y)
@@ -319,7 +303,7 @@ int level_walkable_at(level_t level, float x, float y)
 
 	id &= LEVEL_TILE_TYPEMASK;
 	
-	if (id == LEVEL_TILE_WALL)
+	if (id == ROOM_TILE_WALL)
 		return 0;
 
 	return 1;

@@ -1,7 +1,7 @@
 #ifndef _LEVEL_H
 #define _LEVEL_H
 
-#include "tilemap.h"
+#include "rooms.h"
 
 typedef struct level* level_t;
 
@@ -15,14 +15,8 @@ enum level_tile_mask
 	LEVEL_TILE_TYPEMASK	= 255,
 };
 
-#define TILE_TYPE_SHIFT		8
-
-#define LEVEL_TILE_NONE		-1
-
-#define LEVEL_TILE_FLOOR	0
-#define LEVEL_TILE_WALL		1
-#define LEVEL_TILE_WALL_TOP	2
-#define LEVEL_TILE_SIZE		16.0f
+#define TILE_TYPE_SHIFT	8
+#define LEVEL_TILE_SIZE	16.0f
 
 level_t		level_create(int width, int height);
 void		level_destroy(level_t level);
