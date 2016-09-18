@@ -24,6 +24,7 @@ void		level_generate(level_t level, int seed);
 
 void		level_place_wall(level_t level, int x, int y);
 void		level_place_floor(level_t level, int x, int y);
+void		level_place_room(level_t level, struct room* room, int x, int y);
 
 int			level_walkable_at(level_t level, float x, float y);
 

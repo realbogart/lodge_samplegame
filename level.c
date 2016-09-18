@@ -3,13 +3,37 @@
 
 #include <math.h>
 
+enum path_properties
+{
+	PATH_PROPERTY_ON_PATH = 1,
+	PATH_PROPERTY_START = 2,
+	PATH_PROPERTY_END = 4
+};
+
+enum path_openings
+{
+	PATH_OPENINGS_NONE = 0,
+	PATH_OPENINGS_BOTTOM = 1,
+	PATH_OPENINGS_LEFT = 2,
+	PATH_OPENINGS_RIGHT = 4,
+	PATH_OPENINGS_TOP = 8,
+
+	PATH_OPENINGS_ANY = 0x10
+};
+
+struct level_room
+{
+	enum path_properties properties;
+	enum path_openings openings;
+};
+
 struct level
 {
 	tilemap_t tiles_background;
 	tilemap_t tiles;
 	tilemap_t tiles_foreground;
 
-	struct room	rooms[16];
+	struct level_room rooms[16];
 
 	int width;
 	int height;
@@ -76,7 +100,7 @@ void level_destroy(level_t room)
 void level_generate_path(level_t level)
 {
 	int current_index = rand() % 16;
-	level->rooms[current_index].properties = ROOM_PROPERTY_START;
+	level->rooms[current_index].properties = PATH_PROPERTY_START;
 
 	int step_table[] = { 1, -1, 4, -4,
 						 1, -1, -4, 4,
@@ -85,19 +109,19 @@ void level_generate_path(level_t level)
 						 1, -4, 4, -1,
 						 1, -4, -1, 4 };
 
-	enum room_openings step_mask_to[] = { ROOM_OPENINGS_RIGHT, ROOM_OPENINGS_LEFT, ROOM_OPENINGS_BOTTOM, ROOM_OPENINGS_TOP,
-										  ROOM_OPENINGS_RIGHT, ROOM_OPENINGS_LEFT, ROOM_OPENINGS_TOP, ROOM_OPENINGS_BOTTOM,
-										  ROOM_OPENINGS_RIGHT, ROOM_OPENINGS_BOTTOM, ROOM_OPENINGS_TOP, ROOM_OPENINGS_LEFT,
-										  ROOM_OPENINGS_RIGHT, ROOM_OPENINGS_BOTTOM, ROOM_OPENINGS_LEFT, ROOM_OPENINGS_TOP,
-										  ROOM_OPENINGS_RIGHT, ROOM_OPENINGS_TOP, ROOM_OPENINGS_BOTTOM, ROOM_OPENINGS_LEFT,
-										  ROOM_OPENINGS_RIGHT, ROOM_OPENINGS_TOP, ROOM_OPENINGS_LEFT, ROOM_OPENINGS_BOTTOM };
+	enum room_openings step_mask_to[] = { PATH_OPENINGS_RIGHT, PATH_OPENINGS_LEFT, PATH_OPENINGS_BOTTOM, PATH_OPENINGS_TOP,
+										  PATH_OPENINGS_RIGHT, PATH_OPENINGS_LEFT, PATH_OPENINGS_TOP, PATH_OPENINGS_BOTTOM,
+										  PATH_OPENINGS_RIGHT, PATH_OPENINGS_BOTTOM, PATH_OPENINGS_TOP, PATH_OPENINGS_LEFT,
+										  PATH_OPENINGS_RIGHT, PATH_OPENINGS_BOTTOM, PATH_OPENINGS_LEFT, PATH_OPENINGS_TOP,
+										  PATH_OPENINGS_RIGHT, PATH_OPENINGS_TOP, PATH_OPENINGS_BOTTOM, PATH_OPENINGS_LEFT,
+										  PATH_OPENINGS_RIGHT, PATH_OPENINGS_TOP, PATH_OPENINGS_LEFT, PATH_OPENINGS_BOTTOM };
 
-	enum room_openings step_mask_from[] = { ROOM_OPENINGS_LEFT, ROOM_OPENINGS_RIGHT, ROOM_OPENINGS_TOP, ROOM_OPENINGS_BOTTOM,
-										    ROOM_OPENINGS_LEFT, ROOM_OPENINGS_RIGHT, ROOM_OPENINGS_BOTTOM, ROOM_OPENINGS_TOP,
-										    ROOM_OPENINGS_LEFT, ROOM_OPENINGS_TOP, ROOM_OPENINGS_BOTTOM, ROOM_OPENINGS_RIGHT,
-										    ROOM_OPENINGS_LEFT, ROOM_OPENINGS_TOP, ROOM_OPENINGS_RIGHT, ROOM_OPENINGS_BOTTOM,
-										    ROOM_OPENINGS_LEFT, ROOM_OPENINGS_BOTTOM, ROOM_OPENINGS_TOP, ROOM_OPENINGS_RIGHT,
-										    ROOM_OPENINGS_LEFT, ROOM_OPENINGS_BOTTOM, ROOM_OPENINGS_RIGHT, ROOM_OPENINGS_TOP };
+	enum room_openings step_mask_from[] = { PATH_OPENINGS_LEFT, PATH_OPENINGS_RIGHT, PATH_OPENINGS_TOP, PATH_OPENINGS_BOTTOM,
+										    PATH_OPENINGS_LEFT, PATH_OPENINGS_RIGHT, PATH_OPENINGS_BOTTOM, PATH_OPENINGS_TOP,
+										    PATH_OPENINGS_LEFT, PATH_OPENINGS_TOP, PATH_OPENINGS_BOTTOM, PATH_OPENINGS_RIGHT,
+										    PATH_OPENINGS_LEFT, PATH_OPENINGS_TOP, PATH_OPENINGS_RIGHT, PATH_OPENINGS_BOTTOM,
+										    PATH_OPENINGS_LEFT, PATH_OPENINGS_BOTTOM, PATH_OPENINGS_TOP, PATH_OPENINGS_RIGHT,
+										    PATH_OPENINGS_LEFT, PATH_OPENINGS_BOTTOM, PATH_OPENINGS_RIGHT, PATH_OPENINGS_TOP };
 
 	int found_end = 0;
 	int room_steps = 7;
@@ -107,7 +131,7 @@ void level_generate_path(level_t level)
 
 	for (int i = 0; i < room_steps && !found_end; i++)
 	{
-		level->rooms[current_index].properties |= ROOM_PROPERTY_ON_PATH;
+		level->rooms[current_index].properties |= PATH_PROPERTY_ON_PATH;
 
 		int step = rand() % 24;
 		int tries = 0;
@@ -123,7 +147,7 @@ void level_generate_path(level_t level)
 			int next_y = try_room / 4;
 
 			if (try_room >= 0 && try_room < 16 && 
-				!(level->rooms[try_room].properties & ROOM_PROPERTY_ON_PATH) &&
+				!(level->rooms[try_room].properties & PATH_PROPERTY_ON_PATH) &&
 				!(step_dir == -1 && current_y != next_y) &&
 				!(step_dir == 1 && current_y != next_y))
 			{
@@ -143,8 +167,8 @@ void level_generate_path(level_t level)
 			found_end = 1;
 	}
 
-	level->rooms[current_index].properties |= ROOM_PROPERTY_END;
-	level->rooms[current_index].properties |= ROOM_PROPERTY_ON_PATH;
+	level->rooms[current_index].properties |= PATH_PROPERTY_END;
+	level->rooms[current_index].properties |= PATH_PROPERTY_ON_PATH;
 }
 
 void spawn_box(level_t level, int box_width, int box_height, int x, int y)
@@ -189,7 +213,7 @@ void level_generate(level_t level, int seed)
 	{
 		for (int x = 0; x < 4; x++)
 		{
-			if (level->rooms[4 * y + x].properties & ROOM_PROPERTY_ON_PATH)
+			if (level->rooms[4 * y + x].properties & PATH_PROPERTY_ON_PATH)
 			{
 				carve_box(level, 7, 7, x*8 + 1, y*8 + 1);
 			}
@@ -283,6 +307,32 @@ void level_place_floor(level_t level, int x, int y)
 	tile_place(level->tiles_background, x, y, ROOM_TILE_FLOOR);
 	tile_place(level->tiles, x, y, ROOM_TILE_FLOOR);
 	tile_place(level->tiles_foreground, x, y - 1, ROOM_TILE_NONE);
+}
+
+void level_place_room(level_t level, struct room* room, int x, int y)
+{
+	for (int cy = 0; cy < ROOM_SIZE; cy++)
+	{
+		for (int cx = 0; cx < ROOM_SIZE; cx++)
+		{
+			int tile = tilemap_get_id_at(room->tiles, cx, cy);
+
+			switch (tile)
+			{
+			case ROOM_TILE_FLOOR:
+				level_place_floor(level, cx + x, cy + y);
+				break;
+			case ROOM_TILE_WALL:
+				level_place_wall(level, cx + x, cy + y);
+				break;
+			case ROOM_TILE_OPENING:
+				level_place_floor(level, cx + x, cy + y);
+				break;
+			default:
+				break;
+			}
+		}
+	}
 }
 
 int level_walkable_at(level_t level, float x, float y)

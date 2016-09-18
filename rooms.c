@@ -147,3 +147,19 @@ void rooms_shutdown(rooms_t rooms)
 {
 	free(rooms);
 }
+
+struct room* rooms_get_random(rooms_t rooms, room_connectionmask connectionmask, enum room_type type)
+{
+	for (int i = rand() % rooms->rooms_count, tries = 0;
+		tries < rooms->rooms_count; 
+		tries++, i = ++i % rooms->rooms_count)
+	{
+		if ((rooms->rooms[i].connectionmask & connectionmask & MASK_TOP) &&
+			(rooms->rooms[i].connectionmask & connectionmask & MASK_LEFT) &&
+			(rooms->rooms[i].connectionmask & connectionmask & MASK_RIGHT) &&
+			(rooms->rooms[i].connectionmask & connectionmask & MASK_BOTTOM))
+		{
+			return &rooms->rooms[i];
+		}
+	}
+}
