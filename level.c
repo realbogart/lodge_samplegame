@@ -21,7 +21,7 @@ enum path_openings
 	PATH_OPENINGS_ANY = 0x10
 };
 
-struct level_room
+struct room_slot
 {
 	enum path_properties properties;
 	enum path_openings openings;
@@ -33,7 +33,8 @@ struct level
 	tilemap_t tiles;
 	tilemap_t tiles_foreground;
 
-	struct level_room rooms[16];
+	rooms_t rooms;
+	struct room_slot room_slots[16];
 
 	int width;
 	int height;
@@ -53,18 +54,19 @@ void level_clean(level_t level)
 
 	for (int i = 0; i < 16; i++)
 	{
-		level->rooms[i].openings = 0;
-		level->rooms[i].properties = 0;
+		level->room_slots[i].openings = 0;
+		level->room_slots[i].properties = 0;
 	}
 }
 
-level_t level_create(int width, int height)
+level_t level_create(rooms_t rooms, int width, int height)
 {
 	struct level* level = malloc(sizeof(struct level));
 
 	level->width = width;
 	level->height = height;
 
+	level->rooms = rooms;
 	level->tiles_background = tilemap_create(width, height);
 	level->tiles = tilemap_create(width, height);
 	level->tiles_foreground = tilemap_create(width, height);
@@ -100,7 +102,7 @@ void level_destroy(level_t room)
 void level_generate_path(level_t level)
 {
 	int current_index = rand() % 16;
-	level->rooms[current_index].properties = PATH_PROPERTY_START;
+	level->room_slots[current_index].properties = PATH_PROPERTY_START;
 
 	int step_table[] = { 1, -1, 4, -4,
 						 1, -1, -4, 4,
@@ -131,7 +133,7 @@ void level_generate_path(level_t level)
 
 	for (int i = 0; i < room_steps && !found_end; i++)
 	{
-		level->rooms[current_index].properties |= PATH_PROPERTY_ON_PATH;
+		level->room_slots[current_index].properties |= PATH_PROPERTY_ON_PATH;
 
 		int step = rand() % 24;
 		int tries = 0;
@@ -147,12 +149,12 @@ void level_generate_path(level_t level)
 			int next_y = try_room / 4;
 
 			if (try_room >= 0 && try_room < 16 && 
-				!(level->rooms[try_room].properties & PATH_PROPERTY_ON_PATH) &&
+				!(level->room_slots[try_room].properties & PATH_PROPERTY_ON_PATH) &&
 				!(step_dir == -1 && current_y != next_y) &&
 				!(step_dir == 1 && current_y != next_y))
 			{
-				level->rooms[current_index].openings |= step_mask_to[step];
-				level->rooms[try_room].openings |= step_mask_from[step];
+				level->room_slots[current_index].openings |= step_mask_to[step];
+				level->room_slots[try_room].openings |= step_mask_from[step];
 
 				current_index = try_room;
 				valid_step = 1;
@@ -167,8 +169,8 @@ void level_generate_path(level_t level)
 			found_end = 1;
 	}
 
-	level->rooms[current_index].properties |= PATH_PROPERTY_END;
-	level->rooms[current_index].properties |= PATH_PROPERTY_ON_PATH;
+	level->room_slots[current_index].properties |= PATH_PROPERTY_END;
+	level->room_slots[current_index].properties |= PATH_PROPERTY_ON_PATH;
 }
 
 void spawn_box(level_t level, int box_width, int box_height, int x, int y)
@@ -195,8 +197,15 @@ void carve_box(level_t level, int box_width, int box_height, int x, int y)
 
 void level_generate_rooms(level_t level)
 {
-	for (int i = 0; i < 16; i++)
+	for (int y = 0; y < 4; y++)
 	{
+		for (int x = 0; x < 4; x++)
+		{
+			struct room* room = rooms_get_random(level->rooms, MASK_TOP | MASK_BOTTOM, 0);
+
+			if (room)
+				level_place_room(level, room, x * ROOM_SIZE, y * ROOM_SIZE);
+		}
 	}
 }
 
@@ -213,7 +222,7 @@ void level_generate(level_t level, int seed)
 	{
 		for (int x = 0; x < 4; x++)
 		{
-			if (level->rooms[4 * y + x].properties & PATH_PROPERTY_ON_PATH)
+			if (level->room_slots[4 * y + x].properties & PATH_PROPERTY_ON_PATH)
 			{
 				carve_box(level, 7, 7, x*8 + 1, y*8 + 1);
 			}

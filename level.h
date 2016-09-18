@@ -18,7 +18,7 @@ enum level_tile_mask
 #define TILE_TYPE_SHIFT	8
 #define LEVEL_TILE_SIZE	16.0f
 
-level_t		level_create(int width, int height);
+level_t		level_create(rooms_t rooms, int width, int height);
 void		level_destroy(level_t level);
 void		level_generate(level_t level, int seed);
 

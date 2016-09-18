@@ -154,12 +154,19 @@ struct room* rooms_get_random(rooms_t rooms, room_connectionmask connectionmask,
 		tries < rooms->rooms_count; 
 		tries++, i = ++i % rooms->rooms_count)
 	{
-		if ((rooms->rooms[i].connectionmask & connectionmask & MASK_TOP) &&
-			(rooms->rooms[i].connectionmask & connectionmask & MASK_LEFT) &&
-			(rooms->rooms[i].connectionmask & connectionmask & MASK_RIGHT) &&
-			(rooms->rooms[i].connectionmask & connectionmask & MASK_BOTTOM))
+		room_connectionmask test_top = connectionmask & MASK_TOP;
+		room_connectionmask test_left = connectionmask & MASK_LEFT;
+		room_connectionmask test_right = connectionmask & MASK_RIGHT;
+		room_connectionmask test_bottom = connectionmask & MASK_BOTTOM;
+
+		if ((!test_top || rooms->rooms[i].connectionmask & test_top) &&
+			(!test_left || rooms->rooms[i].connectionmask & test_left) &&
+			(!test_right || rooms->rooms[i].connectionmask & test_right) &&
+			(!test_bottom || rooms->rooms[i].connectionmask & test_bottom))
 		{
 			return &rooms->rooms[i];
 		}
 	}
+
+	return 0;
 }

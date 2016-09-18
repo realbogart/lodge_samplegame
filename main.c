@@ -290,10 +290,9 @@ void game_init()
 	srand(time(0));
 
 	/* Setup map */
-	game->testroom = level_create(level_width, level_height);
-	//testlevel_init();
-	level_generate(game->testroom, rand());
 	game->rooms = rooms_init();
+	game->testroom = level_create(game->rooms, level_width, level_height);
+	level_generate(game->testroom, rand());
 
 	//testlevel_init();
 
