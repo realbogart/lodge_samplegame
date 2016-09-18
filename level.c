@@ -1,55 +1,13 @@
 #include "level.h"
+#include "rooms.h"
 
 #include <math.h>
 
-enum room_openings
-{
-	ROOM_OPENINGS_NONE		= 0,
-	ROOM_OPENINGS_BOTTOM	= 1,
-	ROOM_OPENINGS_LEFT		= 2,
-	ROOM_OPENINGS_RIGHT		= 4,
-	ROOM_OPENINGS_TOP		= 8,
-
-	ROOM_OPENINGS_ANY		= 0x10,
-	ROOM_OPENINGS_NOT_NONE	= 0x11
-};
-
-enum room_types
+enum room_properties
 {
 	ROOM_TYPES_ON_PATH = 1,
 	ROOM_TYPES_START = 2,
-	ROOM_TYPES_END = 4,
-};
-
-struct room_desc
-{
-	char tiles[64];
-
-	float probability;
-};
-
-struct room_desc room_database[] =
-{
-	{
-		"        "\
-		" .      "\
-		"  .     "\
-		"        "\
-		"  .     "\
-		" .      "\
-		".       "\
-		"        ", 0.5f
-	},
-	{
-		"....    "\
-		"        "\
-		"        "\
-		"   ...  "\
-		"        "\
-		"        "\
-		"...     "\
-		"        ", 0.1f
-	}
+	ROOM_TYPES_END = 4
 };
 
 struct room
@@ -57,7 +15,7 @@ struct room
 	tilemap_t tiles;
 
 	enum room_openings openings;
-	enum room_types types;
+	enum room_properties properties;
 };
 
 struct level
@@ -87,7 +45,7 @@ void level_clean(level_t level)
 	for (int i = 0; i < 16; i++)
 	{
 		level->rooms[i].openings = 0;
-		level->rooms[i].types = 0;
+		level->rooms[i].properties = 0;
 	}
 }
 
@@ -110,30 +68,30 @@ void level_destroy(level_t room)
 	free(room);
 }
 
-int get_random_room()
-{
-	int room_count = sizeof(room_database) / sizeof(room_database[0]);
-	
-	int index = rand() % room_count;
-
-	while(1)
-	{
-		struct room_desc* desc = &room_database[index];
-
-		int dice = rand() % 100000000 + 1;
-		float probability = (float)dice / 100000000.0f;
-
-		if(probability < desc->probability)
-			return index;
-
-		index = ++index & room_count;
-	}
-}
+//int get_random_room()
+//{
+//	int room_count = sizeof(room_database) / sizeof(room_database[0]);
+//	
+//	int index = rand() % room_count;
+//
+//	while(1)
+//	{
+//		struct room_desc* desc = &room_database[index];
+//
+//		int dice = rand() % 100000000 + 1;
+//		float probability = (float)dice / 100000000.0f;
+//
+//		if(probability < desc->probability)
+//			return index;
+//
+//		index = ++index & room_count;
+//	}
+//}
 
 void level_generate_path(level_t level)
 {
 	int current_index = rand() % 16;
-	level->rooms[current_index].types = ROOM_TYPES_START;
+	level->rooms[current_index].properties = ROOM_TYPES_START;
 
 	int step_table[] = { 1, -1, 4, -4,
 						 1, -1, -4, 4,
@@ -164,7 +122,7 @@ void level_generate_path(level_t level)
 
 	for (int i = 0; i < room_steps && !found_end; i++)
 	{
-		level->rooms[current_index].types |= ROOM_TYPES_ON_PATH;
+		level->rooms[current_index].properties |= ROOM_TYPES_ON_PATH;
 
 		int step = rand() % 24;
 		int tries = 0;
@@ -180,7 +138,7 @@ void level_generate_path(level_t level)
 			int next_y = try_room / 4;
 
 			if (try_room >= 0 && try_room < 16 && 
-				!(level->rooms[try_room].types & ROOM_TYPES_ON_PATH) &&
+				!(level->rooms[try_room].properties & ROOM_TYPES_ON_PATH) &&
 				!(step_dir == -1 && current_y != next_y) &&
 				!(step_dir == 1 && current_y != next_y))
 			{
@@ -200,8 +158,8 @@ void level_generate_path(level_t level)
 			found_end = 1;
 	}
 
-	level->rooms[current_index].types |= ROOM_TYPES_END;
-	level->rooms[current_index].types |= ROOM_TYPES_ON_PATH;
+	level->rooms[current_index].properties |= ROOM_TYPES_END;
+	level->rooms[current_index].properties |= ROOM_TYPES_ON_PATH;
 }
 
 void spawn_box(level_t level, int box_width, int box_height, int x, int y)
@@ -226,6 +184,14 @@ void carve_box(level_t level, int box_width, int box_height, int x, int y)
 	}
 }
 
+void level_generate_rooms(level_t level)
+{
+	for (int i = 0; i < 16; i++)
+	{
+		struct room* room = &level->rooms[i];
+	}
+}
+
 void level_generate(level_t level, int seed)
 {
 	srand(seed);
@@ -233,14 +199,19 @@ void level_generate(level_t level, int seed)
 	level_clean(level);
 	spawn_box(level, 32, 32, 0, 0);
 	level_generate_path(level);
+	level_generate_rooms(level);
 
 	for (int y = 0; y < 4; y++)
 	{
 		for (int x = 0; x < 4; x++)
 		{
-			if (level->rooms[4 * y + x].types & ROOM_TYPES_ON_PATH)
+			if (level->rooms[4 * y + x].properties & ROOM_TYPES_ON_PATH)
 			{
-				carve_box(level, 8, 8, x*8, y*8);
+				carve_box(level, 7, 7, x*8 + 1, y*8 + 1);
+			}
+			else
+			{
+				carve_box(level, 3, 3, x * 8 + 3, y * 8 + 3);
 			}
 		}
 	}

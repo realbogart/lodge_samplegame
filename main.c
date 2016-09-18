@@ -23,6 +23,7 @@
 #include "tilemap.h"
 #include "tilemap_render.h"
 #include "level.h"
+#include "rooms.h"
 
 #define VIEW_WIDTH		320
 #define VIEW_HEIGHT		180
@@ -65,6 +66,7 @@ struct game {
 	struct player					player;
 
 	level_t							testroom;
+	rooms_t							rooms;
 
 	struct game_textures			textures;
 
@@ -240,24 +242,24 @@ void testlevel_init()
 
 	level_get_tile_dimensions(game->testroom, &width, &height);
 
-	spawn_box(game->testroom, width, height, 0, 0);
+	//spawn_box(game->testroom, width, height, 0, 0);
 	//spawn_room(game->testroom, 8, 8, 0, 0);
 	//spawn_room(game->testroom, 8, 8, 8, 8);
 
-	//for (int y = 0; y >= 0 && y < height; y++)
-	//{
-	//	for (int x = 0; x >= 0 && x < width; x++)
-	//	{
-	//		if (rand() % 8 == 0)
-	//		{
-	//			level_place_wall(game->testroom, x, y);
-	//		}
-	//		else
-	//		{
-	//			level_place_floor(game->testroom, x, y);
-	//		}
-	//	}
-	//}
+	for (int y = 0; y >= 0 && y < height; y++)
+	{
+		for (int x = 0; x >= 0 && x < width; x++)
+		{
+			if (rand() % 8 == 0)
+			{
+				level_place_wall(game->testroom, x, y);
+			}
+			else
+			{
+				level_place_floor(game->testroom, x, y);
+			}
+		}
+	}
 }
 
 struct anim* get_tile_anim(int id)
@@ -289,7 +291,9 @@ void game_init()
 
 	/* Setup map */
 	game->testroom = level_create(level_width, level_height);
+	//testlevel_init();
 	level_generate(game->testroom, rand());
+	game->rooms = rooms_init();
 
 	//testlevel_init();
 
@@ -346,7 +350,7 @@ void game_init()
 
 	/* Set camera position */
 	set2f(game->camera_pos, 0.0f, 0.0f);
-	game->camera_zoom = 0.25f;
+	game->camera_zoom = 0.3f;
 }
 
 void game_key_callback(lodge_window_t window, int key, int scancode, int action, int mods)
@@ -377,6 +381,7 @@ void game_assets_load()
 void game_assets_release()
 {
 	level_destroy(game->testroom);
+	rooms_shutdown(game->rooms);
 
 	assets_release();
 }
