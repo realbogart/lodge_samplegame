@@ -25,6 +25,8 @@ struct room_slot
 {
 	enum path_properties properties;
 	enum path_openings openings;
+
+	room_connectionmask connectionmask;
 };
 
 struct level
@@ -195,15 +197,89 @@ void carve_box(level_t level, int box_width, int box_height, int x, int y)
 	}
 }
 
+room_connectionmask level_get_connectionmask(level_t level, int x, int y)
+{
+	room_connectionmask mask = 0;
+
+	if (x - 1 >= 0)
+	{
+		int index_left = y * 4 + x - 1;
+		struct room_slot* slot_left = &level->room_slots[index_left];
+
+		room_connectionmask mask_left = slot_left->connectionmask & MASK_RIGHT;
+		mask_left = (mask_left << 8) & MASK_LEFT;
+		mask |= mask_left;
+	}
+
+	if (x + 1 < 4)
+	{
+		int index_right = y * 4 + x + 1;
+		struct room_slot* slot_left = &level->room_slots[index_right];
+
+		room_connectionmask mask_right = slot_left->connectionmask & MASK_LEFT;
+		mask_right = (mask_right >> 8) & MASK_RIGHT;
+		mask |= mask_right;
+	}
+
+	if (y - 1 >= 0)
+	{
+		int index_top = (y - 1) * 4 + x;
+		struct room_slot* slot_left = &level->room_slots[index_top];
+
+		room_connectionmask mask_top = slot_left->connectionmask & MASK_BOTTOM;
+		mask_top = (mask_top << 24) & MASK_TOP;
+		mask |= mask_top;
+	}
+
+	if (y + 1 < 4)
+	{
+		int index_bottom = (y + 1) * 4 + x;
+		struct room_slot* slot_left = &level->room_slots[index_bottom];
+
+		room_connectionmask mask_bottom = slot_left->connectionmask & MASK_TOP;
+		mask_bottom = (mask_bottom >> 24) & MASK_BOTTOM;
+		mask |= mask_bottom;
+	}
+
+	return mask;
+}
+
+void level_set_initial_connectionmasks(level_t level)
+{
+	for (int y = 0; y < 4; y++)
+	{
+		for (int x = 0; x < 4; x++)
+		{
+			struct room_slot* room_slot = &level->room_slots[y * 4 + x];
+			room_slot->connectionmask = 0;
+
+			if (room_slot->openings & PATH_OPENINGS_TOP)
+				room_slot->connectionmask |= MASK_TOP;
+
+			if (room_slot->openings & PATH_OPENINGS_LEFT)
+				room_slot->connectionmask |= MASK_LEFT;
+
+			if (room_slot->openings & PATH_OPENINGS_RIGHT)
+				room_slot->connectionmask |= MASK_RIGHT;
+
+			if (room_slot->openings & PATH_OPENINGS_BOTTOM)
+				room_slot->connectionmask |= MASK_BOTTOM;
+		}
+	}
+}
+
 void level_generate_rooms(level_t level)
 {
 	for (int y = 0; y < 4; y++)
 	{
 		for (int x = 0; x < 4; x++)
 		{
-			struct room* room = rooms_get_random(level->rooms, MASK_TOP | MASK_BOTTOM, 0);
+			struct room_slot* room_slot = &level->room_slots[y*4 + x];
+			room_slot->connectionmask = level_get_connectionmask(level, x, y);
 
-			if (room)
+			struct room* room = rooms_get_random(level->rooms, room_slot->connectionmask, 0);
+
+			if (room/* && room_slot->properties & PATH_PROPERTY_ON_PATH*/)
 				level_place_room(level, room, x * ROOM_SIZE, y * ROOM_SIZE);
 		}
 	}
@@ -214,24 +290,26 @@ void level_generate(level_t level, int seed)
 	srand(seed);
 
 	level_clean(level);
-	spawn_box(level, 32, 32, 0, 0);
+	//spawn_box(level, 32, 32, 0, 0);
+
 	level_generate_path(level);
+	level_set_initial_connectionmasks(level);
 	level_generate_rooms(level);
 
-	for (int y = 0; y < 4; y++)
-	{
-		for (int x = 0; x < 4; x++)
-		{
-			if (level->room_slots[4 * y + x].properties & PATH_PROPERTY_ON_PATH)
-			{
-				carve_box(level, 7, 7, x*8 + 1, y*8 + 1);
-			}
-			else
-			{
-				carve_box(level, 3, 3, x * 8 + 3, y * 8 + 3);
-			}
-		}
-	}
+	//for (int y = 0; y < 4; y++)
+	//{
+	//	for (int x = 0; x < 4; x++)
+	//	{
+	//		if (level->room_slots[4 * y + x].properties & PATH_PROPERTY_ON_PATH)
+	//		{
+	//			carve_box(level, 7, 7, x*8 + 1, y*8 + 1);
+	//		}
+	//		else
+	//		{
+	//			carve_box(level, 3, 3, x * 8 + 3, y * 8 + 3);
+	//		}
+	//	}
+	//}
 }
 
 enum level_tile_mask tile_get_mask(tilemap_t tilemap, int x, int y, int type)

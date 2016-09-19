@@ -265,7 +265,7 @@ void testlevel_init()
 struct anim* get_tile_anim(int id)
 {
 	int type = id & LEVEL_TILE_TYPEMASK;
-	int variation = id >> TILE_TYPE_SHIFT;
+	int variation = (id >> TILE_TYPE_SHIFT) & LEVEL_TILE_TYPEMASK;
 
 	if (type == ROOM_TILE_WALL)
 		return game->tile_animations.wall[variation];
@@ -349,7 +349,9 @@ void game_init()
 
 	/* Set camera position */
 	set2f(game->camera_pos, 0.0f, 0.0f);
-	game->camera_zoom = 0.3f;
+	game->camera_zoom = 0.35f;
+
+	env_bind_1f(&core_global->env, "camera_zoom", &game->camera_zoom);
 }
 
 void game_key_callback(lodge_window_t window, int key, int scancode, int action, int mods)
