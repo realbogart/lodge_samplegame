@@ -424,7 +424,6 @@ void level_place_room(level_t level, struct room* room, int x, int y)
 
 int level_walkable_at(level_t level, float x, float y)
 {
-	return 1;
 	tilemap_t tilemap = level_get_tiles(level);
 
 	int world_width, world_height;

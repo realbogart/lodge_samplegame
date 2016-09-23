@@ -15,13 +15,13 @@ uniform sampler2D palette;
 
 vec4 map_color(vec4 color) 
 {
-    vec4 map = floor(color * 16.0);
+    vec4 map = floor(color * 15.0);
     int i = int(map.r + map.g * 16 + map.b * 16 * 16);
 
-	int x = i / 64;
-	int y = int(mod(i, 64));
-	
-    return texture2D(palette, floor(1.0/vec2(x, y)));
+	float x = float(mod(i, 64)) / 64.0;
+	float y = float(i / 64) / 64.0;
+
+    return texture2D(palette, vec2(x, y));
 }
 
 vec4 interpolate(sampler2D sampler, vec2 texcoord)
@@ -45,7 +45,7 @@ vec4 interpolate(sampler2D sampler, vec2 texcoord)
 
 float pixelate(float value)
 {
-	int wholepixels = int(value / 1.0);
+	int wholepixels = int(value / 2.0);
 	return float(wholepixels);
 }
 
@@ -68,16 +68,16 @@ void main()
 	
 	float offset_depth = (color_depth.x - 0.5) / 0.00392157;
 	
-	//vec3 worldpos = pixelate(vertex.xyz);
-	vec3 worldpos = vertex.xyz;
+	vec3 worldpos = pixelate(vertex.xyz);
+	//vec3 worldpos = vertex.xyz;
 	worldpos.z = offset_depth;
 	worldpos.y -= offset_depth;
 	vec3 light_pos = lightpos;
 	
-	light_pos.z = 20.0;
-	light_pos.y -= 8.0;
+	light_pos.z = 8.0;
+	light_pos.y -= 16.0;
 	
-	//light_pos = pixelate(light_pos);
+	light_pos = pixelate(light_pos);
 	vec3 normal = vec3(color_normal.xyz);
 	normal -= vec3(0.5, 0.5, 0.5);
 	normal = normalize(normal);
@@ -90,7 +90,7 @@ void main()
 	float light_angle = max(0.0, dot(normal, light_dir));
 	
 	//float light_att = 50.0 / (1.0 + 0.1*light_dist + 0.05*light_dist*light_dist);
-	float light_radius = 1000.0;
+	float light_radius = 40.0;
 	float light_att = clamp(1.0 - (light_dist*light_dist)/(light_radius*light_radius), 0.0, 1.0);
 	light_att *= light_att;
 	

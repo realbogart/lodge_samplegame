@@ -44,6 +44,7 @@ struct player
 	struct anim* anim_idle;
 
 	float speed;
+	int noclip;
 };
 
 struct tile_animations
@@ -126,19 +127,21 @@ void game_think(struct graphics *g, float dt)
 	add2f(next_pos, xy_of(dir));
 
 	// X check
-	if (level_walkable_at(game->testroom, next_pos[0] + 4.0f, game->player.sprite.position[1] - 4.0f) &&
+	if((level_walkable_at(game->testroom, next_pos[0] + 4.0f, game->player.sprite.position[1] - 4.0f) &&
 		level_walkable_at(game->testroom, next_pos[0] - 5.0f, game->player.sprite.position[1] - 4.0f) &&
 		level_walkable_at(game->testroom, next_pos[0] + 4.0f, game->player.sprite.position[1] - 8.0f) &&
-		level_walkable_at(game->testroom, next_pos[0] - 5.0f, game->player.sprite.position[1] - 8.0f))
+		level_walkable_at(game->testroom, next_pos[0] - 5.0f, game->player.sprite.position[1] - 8.0f)) ||
+		game->player.noclip)
 	{
 		set2f(game->player.sprite.position, next_pos[0], game->player.sprite.position[1]);
 	}
 
 	// Y check
-	if (level_walkable_at(game->testroom, game->player.sprite.position[0] + 4.0f, next_pos[1] - 4.0f) &&
+	if((level_walkable_at(game->testroom, game->player.sprite.position[0] + 4.0f, next_pos[1] - 4.0f) &&
 		level_walkable_at(game->testroom, game->player.sprite.position[0] - 5.0f, next_pos[1] - 4.0f) &&
 		level_walkable_at(game->testroom, game->player.sprite.position[0] + 4.0f, next_pos[1] - 8.0f) &&
-		level_walkable_at(game->testroom, game->player.sprite.position[0] - 5.0f, next_pos[1] - 8.0f))
+		level_walkable_at(game->testroom, game->player.sprite.position[0] - 5.0f, next_pos[1] - 8.0f)) ||
+		game->player.noclip)
 	{
 		set2f(game->player.sprite.position, game->player.sprite.position[0], next_pos[1]);
 	}
@@ -150,10 +153,10 @@ void game_think(struct graphics *g, float dt)
 	vec2 camera_target;
 	set2f(camera_target, xy_of(game->player.sprite.position));
 	
-	camera_target[0] = max(camera_target[0], (VIEW_WIDTH / 2) / game->camera_zoom) - LEVEL_TILE_SIZE / 2.0f;
-	camera_target[0] = min(camera_target[0], level_width - (VIEW_WIDTH / 2) / game->camera_zoom - LEVEL_TILE_SIZE / 2.0f);
-	camera_target[1] = min(camera_target[1], - (VIEW_HEIGHT / 2) / game->camera_zoom) + LEVEL_TILE_SIZE / 2.0f;
-	camera_target[1] = max(camera_target[1], - level_height + (VIEW_HEIGHT / 2) / game->camera_zoom + LEVEL_TILE_SIZE / 2.0f);
+	//camera_target[0] = max(camera_target[0], (VIEW_WIDTH / 2) / game->camera_zoom) - LEVEL_TILE_SIZE / 2.0f;
+	//camera_target[0] = min(camera_target[0], level_width - (VIEW_WIDTH / 2) / game->camera_zoom - LEVEL_TILE_SIZE / 2.0f);
+	//camera_target[1] = min(camera_target[1], - (VIEW_HEIGHT / 2) / game->camera_zoom) + LEVEL_TILE_SIZE / 2.0f;
+	//camera_target[1] = max(camera_target[1], - level_height + (VIEW_HEIGHT / 2) / game->camera_zoom + LEVEL_TILE_SIZE / 2.0f);
 	lerp2f(game->camera_pos, camera_target, 0.01f*dt);
 
 	animatedsprites_update(game->batcher, &assets->pyxels.textures.atlas, dt);
@@ -302,9 +305,11 @@ void game_init()
 	set3f(game->camera_pos, game->player.sprite.position[0], game->player.sprite.position[1], game->player.sprite.position[3]);
 	set2f(game->player.sprite.scale, 1.0f, 1.0f);
 	game->player.speed = 5.8f;
+	game->player.noclip = 0;
 
 	env_bind_3f(&core_global->env, "player_position", &game->player.sprite.position);
 	env_bind_1f(&core_global->env, "player_speed", &game->player.speed);
+	env_bind_bool(&core_global->env, "player_noclip", &game->player.noclip);
 
 	/* Setup shaders */
 	shader_constant_uniform1i(&assets->shaders.tilemap_shader, "diffuse", 0);
