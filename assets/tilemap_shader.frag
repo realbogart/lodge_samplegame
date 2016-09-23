@@ -45,7 +45,7 @@ vec4 interpolate(sampler2D sampler, vec2 texcoord)
 
 float pixelate(float value)
 {
-	int wholepixels = int(value / 2.0);
+	int wholepixels = int(value / 1.0);
 	return float(wholepixels);
 }
 
@@ -75,7 +75,7 @@ void main()
 	vec3 light_pos = lightpos;
 	
 	light_pos.z = 8.0;
-	light_pos.y -= 16.0;
+	light_pos.y -= 7.0;
 	
 	light_pos = pixelate(light_pos);
 	vec3 normal = vec3(color_normal.xyz);
@@ -90,7 +90,7 @@ void main()
 	float light_angle = max(0.0, dot(normal, light_dir));
 	
 	//float light_att = 50.0 / (1.0 + 0.1*light_dist + 0.05*light_dist*light_dist);
-	float light_radius = 40.0;
+	float light_radius = 80.0;
 	float light_att = clamp(1.0 - (light_dist*light_dist)/(light_radius*light_radius), 0.0, 1.0);
 	light_att *= light_att;
 	
