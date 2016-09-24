@@ -76,7 +76,7 @@ void tilemap_add_child(tilemap_t tilemap, int x, int y, tilemap_t child)
 	}
 }
 
-int tilemap_set_id_at(tilemap_t tilemap, int x, int y, int id)
+void tilemap_set_id_at(tilemap_t tilemap, int x, int y, int id)
 {
 	if (x < 0 || x >= tilemap->width || y < 0 || y >= tilemap->height)
 		return;
