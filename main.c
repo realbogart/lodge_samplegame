@@ -19,6 +19,8 @@
 #include "animatedsprites.h"
 #include "top-down/tiles.h"
 #include "lodge_window.h"
+#include "framebuffer.h"
+#include "drawable.h"
 
 #include "tilemap.h"
 #include "tilemap_render.h"
@@ -65,10 +67,17 @@ struct game_textures
 struct game {
 	struct animatedsprites*			batcher;
 	struct player					player;
+	struct drawable					fullscreen_quad;
+
+	struct console_cmd				cmd_postprocess;
+
+	framebuffer_t					framebuffer;
+	texture_t						frame_texture;
 
 	level_t							testroom;
 	rooms_t							rooms;
 
+	int								enable_postprocess;
 	struct game_textures			textures;
 
 	tilemap_render_t				tilemap_render_background;
@@ -102,6 +111,9 @@ void game_init_memory(struct shared_memory *shared_memory, int reload)
 void game_think(struct graphics *g, float dt)
 {
 	shader_uniforms_think(&assets->shaders.tilemap_shader, dt);
+	shader_uniforms_think(&assets->shaders.objects, dt);
+	shader_uniforms_think(&assets->shaders.obstructed, dt);
+	shader_uniforms_think(&assets->shaders.postprocess, dt);
 
 	/* Move player */
 	vec2 next_pos;
@@ -164,13 +176,14 @@ void game_think(struct graphics *g, float dt)
 	tilemap_render_update(game->tilemap_render_background, &assets->pyxels.textures.atlas, dt);
 	tilemap_render_update(game->tilemap_render, &assets->pyxels.textures.atlas, dt);
 	tilemap_render_update(game->tilemap_render_foreground, &assets->pyxels.textures.atlas, dt);
-
-	shader_uniforms_think(&assets->shaders.basic_shader, dt);
 }
 
 void game_render(struct graphics *g, float dt)
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	//glEnable(GL_ALPHA_TEST);
+	//glAlphaFunc(GL_GREATER, 0);
 
 	mat4 transform;
 	mat4 offset;
@@ -194,30 +207,59 @@ void game_render(struct graphics *g, float dt)
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, game->textures.diffuse);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, game->textures.normal);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, game->textures.depth);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, game->textures.palette);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	if (game->enable_postprocess)
+	{
+		framebuffer_bind(game->framebuffer);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	}
 
 	tilemap_render_render(game->tilemap_render_background, &assets->shaders.tilemap_shader);
 	tilemap_render_render(game->tilemap_render, &assets->shaders.tilemap_shader);
+
+	animatedsprites_render_simple(game->batcher, &assets->shaders.objects, game->textures.diffuse, g->projection, final);
 	
-	animatedsprites_render_simple(game->batcher, &assets->shaders.basic_shader, game->textures.diffuse, g->projection, final);
-	
+	//glEnable(GL_STENCIL_TEST);
+	//glEnable(GL_DEPTH_TEST);
+	//glClear(GL_STENCIL_BUFFER_BIT);
+	//glStencilFunc(GL_ALWAYS, 10, 0xFF);
+	//glStencilOpSeparate(GL_FRONT, GL_REPLACE, GL_REPLACE, GL_REPLACE);
+	//glStencilMask(0xFF);
+
 	tilemap_render_render(game->tilemap_render_foreground, &assets->shaders.tilemap_shader);
+
+	//glStencilFunc(GL_EQUAL, 10, 0xFF);
+	//glStencilMask(0);
+	animatedsprites_render_simple(game->batcher, &assets->shaders.obstructed, game->textures.diffuse, g->projection, final);
+
+	if (game->enable_postprocess)
+	{
+		framebuffer_unbind();
+		//glViewport(VIEW_WIDTH, VIEW_WIDTH, VIEW_WIDTH, VIEW_HEIGHT);
+		glUseProgram(assets->shaders.postprocess.program);
+		texture_bind(game->frame_texture, 0);
+		drawable_render(&game->fullscreen_quad);
+		glUseProgram(0);
+	}
+
+	glDisable(GL_STENCIL_TEST);
 }
 
 void game_mousebutton_callback(lodge_window_t window, int button, int action, int mods)
@@ -228,9 +270,21 @@ void game_mousebutton_callback(lodge_window_t window, int button, int action, in
 	}
 }
 
+void toggle_postprocess(struct console* c, struct console_cmd* cmd, struct list* argv)
+{
+	game->enable_postprocess = !game->enable_postprocess;
+}
+
 void game_console_init(struct console *c, struct env *env)
 {
-	/* env_bind_1f(c, "print_fps", &(game->print_fps)); */
+	game->cmd_postprocess.argc = 0;
+	game->cmd_postprocess.callback = &toggle_postprocess;
+	strcpy(game->cmd_postprocess.name, "postprocess");
+	console_cmd_add(&game->cmd_postprocess, &c->root_cmd);
+
+	env_bind_2f(&core_global->env, "player_position", &game->player.sprite.position);
+	env_bind_1f(&core_global->env, "player_speed", &game->player.speed);
+	env_bind_bool(&core_global->env, "player_noclip", &game->player.noclip);
 }
 
 void spawn_room(level_t level, int width, int height, int x, int y)
@@ -284,6 +338,22 @@ void game_init()
 {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
+	int screen_width, screen_height;
+
+	lodge_window_get_screen_size(&screen_width, &screen_height);
+
+	game->framebuffer = framebuffer_create();
+	game->frame_texture = texture_create_rgba(screen_width, screen_height);
+
+	framebuffer_bind(game->framebuffer);
+	framebuffer_attach_texture(game->framebuffer, game->frame_texture, FRAMEBUFFER_TARGET_COLOR);
+	framebuffer_unbind();
+
+	game->enable_postprocess = 0;
+
+	//drawable_new_rect_solidf(&game->fullscreen_quad, VIEW_WIDTH / 2.0f, VIEW_HEIGHT / 2.0f, VIEW_WIDTH, VIEW_HEIGHT, &assets->shaders.postprocess);
+	drawable_new_rect_fullscreen(&game->fullscreen_quad, &assets->shaders.postprocess);
+
 	/* Create animated sprite batcher. */
 	game->batcher = animatedsprites_create();
 
@@ -304,14 +374,13 @@ void game_init()
 	set3f(game->player.sprite.position, 80.0f, -80.0f, 0.0f);
 	set3f(game->camera_pos, game->player.sprite.position[0], game->player.sprite.position[1], game->player.sprite.position[3]);
 	set2f(game->player.sprite.scale, 1.0f, 1.0f);
-	game->player.speed = 5.8f;
+	game->player.speed = 0.8f;
 	game->player.noclip = 0;
 
-	env_bind_3f(&core_global->env, "player_position", &game->player.sprite.position);
-	env_bind_1f(&core_global->env, "player_speed", &game->player.speed);
-	env_bind_bool(&core_global->env, "player_noclip", &game->player.noclip);
-
 	/* Setup shaders */
+	shader_constant_uniform1i(&assets->shaders.postprocess, "texture_diffuse", 0);
+	//shader_uniform_matrix4f(&assets->shaders.postprocess, "projection", &core_global->graphics.projection);
+
 	shader_constant_uniform1i(&assets->shaders.tilemap_shader, "diffuse", 0);
 	shader_constant_uniform1i(&assets->shaders.tilemap_shader, "normal", 1);
 	shader_constant_uniform1i(&assets->shaders.tilemap_shader, "depth", 2);
@@ -354,7 +423,7 @@ void game_init()
 
 	/* Set camera position */
 	set2f(game->camera_pos, 0.0f, 0.0f);
-	game->camera_zoom = 0.35f;
+	game->camera_zoom = 1.0f;
 
 	env_bind_1f(&core_global->env, "camera_zoom", &game->camera_zoom);
 }
