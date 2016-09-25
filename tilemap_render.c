@@ -3,6 +3,8 @@
 #include "animatedsprites.h"
 #include "atlas.h"
 
+#include <stdlib.h>
+
 struct tilemap_render
 {
 	tilemap_t				tilemap;

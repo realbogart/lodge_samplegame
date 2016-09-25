@@ -70,6 +70,7 @@ struct game {
 	struct drawable					fullscreen_quad;
 
 	struct console_cmd				cmd_postprocess;
+	struct console_cmd				cmd_editmode;
 
 	framebuffer_t					framebuffer;
 	texture_t						frame_texture;
@@ -78,6 +79,8 @@ struct game {
 	rooms_t							rooms;
 
 	int								enable_postprocess;
+	int								enable_editmode;
+
 	struct game_textures			textures;
 
 	tilemap_render_t				tilemap_render_background;
@@ -141,8 +144,8 @@ void game_think(struct graphics *g, float dt)
 	// X check
 	if((level_walkable_at(game->testroom, next_pos[0] + 4.0f, game->player.sprite.position[1] - 4.0f) &&
 		level_walkable_at(game->testroom, next_pos[0] - 5.0f, game->player.sprite.position[1] - 4.0f) &&
-		level_walkable_at(game->testroom, next_pos[0] + 4.0f, game->player.sprite.position[1] - 8.0f) &&
-		level_walkable_at(game->testroom, next_pos[0] - 5.0f, game->player.sprite.position[1] - 8.0f)) ||
+		level_walkable_at(game->testroom, next_pos[0] + 4.0f, game->player.sprite.position[1] - 12.0f) &&
+		level_walkable_at(game->testroom, next_pos[0] - 5.0f, game->player.sprite.position[1] - 12.0f)) ||
 		game->player.noclip)
 	{
 		set2f(game->player.sprite.position, next_pos[0], game->player.sprite.position[1]);
@@ -151,8 +154,8 @@ void game_think(struct graphics *g, float dt)
 	// Y check
 	if((level_walkable_at(game->testroom, game->player.sprite.position[0] + 4.0f, next_pos[1] - 4.0f) &&
 		level_walkable_at(game->testroom, game->player.sprite.position[0] - 5.0f, next_pos[1] - 4.0f) &&
-		level_walkable_at(game->testroom, game->player.sprite.position[0] + 4.0f, next_pos[1] - 8.0f) &&
-		level_walkable_at(game->testroom, game->player.sprite.position[0] - 5.0f, next_pos[1] - 8.0f)) ||
+		level_walkable_at(game->testroom, game->player.sprite.position[0] + 4.0f, next_pos[1] - 12.0f) &&
+		level_walkable_at(game->testroom, game->player.sprite.position[0] - 5.0f, next_pos[1] - 12.0f)) ||
 		game->player.noclip)
 	{
 		set2f(game->player.sprite.position, game->player.sprite.position[0], next_pos[1]);
@@ -275,12 +278,35 @@ void toggle_postprocess(struct console* c, struct console_cmd* cmd, struct list*
 	game->enable_postprocess = !game->enable_postprocess;
 }
 
+void toggle_editmode(struct console* c, struct console_cmd* cmd, struct list* argv)
+{
+	game->enable_editmode = !game->enable_editmode;
+
+	if (game->enable_editmode)
+	{
+		game->camera_zoom = 0.3f;
+		game->player.noclip = 1;
+		game->player.speed = 5.0f;
+	}
+	else
+	{
+		game->camera_zoom = 1.0f;
+		game->player.noclip = 0;
+		game->player.speed = 0.5f;
+	}
+}
+
 void game_console_init(struct console *c, struct env *env)
 {
 	game->cmd_postprocess.argc = 0;
 	game->cmd_postprocess.callback = &toggle_postprocess;
 	strcpy(game->cmd_postprocess.name, "postprocess");
 	console_cmd_add(&game->cmd_postprocess, &c->root_cmd);
+
+	game->cmd_editmode.argc = 0;
+	game->cmd_editmode.callback = &toggle_editmode;
+	strcpy(game->cmd_editmode.name, "editmode");
+	console_cmd_add(&game->cmd_editmode, &c->root_cmd);
 
 	env_bind_2f(&core_global->env, "player_position", &game->player.sprite.position);
 	env_bind_1f(&core_global->env, "player_speed", &game->player.speed);
@@ -370,11 +396,11 @@ void game_init()
 	//testlevel_init();
 
 	/* Setup player */
-	game->player.anim_idle = pyxel_asset_get_anim(&assets->pyxels.textures, "player_idle");
+	game->player.anim_idle = pyxel_asset_get_anim(&assets->pyxels.textures, "bomb");
 	set3f(game->player.sprite.position, 80.0f, -80.0f, 0.0f);
 	set3f(game->camera_pos, game->player.sprite.position[0], game->player.sprite.position[1], game->player.sprite.position[3]);
-	set2f(game->player.sprite.scale, 1.0f, 1.0f);
-	game->player.speed = 0.8f;
+	set2f(game->player.sprite.scale, 0.5f, 0.5f);
+	game->player.speed = 0.5f;
 	game->player.noclip = 0;
 
 	/* Setup shaders */
@@ -436,6 +462,9 @@ void game_key_callback(lodge_window_t window, int key, int scancode, int action,
 				lodge_window_destroy(window);
 				break;
 			case LODGE_KEY_ENTER:
+				lodge_window_toggle_fullscreen(window);
+				break;
+			case LODGE_KEY_Z:
 				lodge_window_toggle_fullscreen(window);
 				break;
 			case LODGE_KEY_X:

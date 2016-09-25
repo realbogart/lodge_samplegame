@@ -1,5 +1,7 @@
 #include "tilemap.h"
 
+#include <stdlib.h>
+
 struct tile
 {
 	tilemap_t parent;
